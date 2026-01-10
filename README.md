@@ -1,3 +1,11 @@
+# 🛡️ VoIP Server Installer
+
+**Secure, Automated Asterisk Deployment for Ubuntu 24.04**
+
+> A production-ready installer for a secure VoIP stack: **Asterisk 22** (Docker) + **PJSIP** + **TLS/SRTP** encryption + **Let's Encrypt** SSL + **Fail2Ban** & **NFTables**. Designed for privacy and ease of use.
+
+---
+
 # 📞 Asterisk Deployment Guide
 
 **Version:** `v4.6.2` (Safe Docker Mode)
