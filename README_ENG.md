@@ -162,3 +162,116 @@ Configure your softphone with these settings:
 docker logs -f asterisk-voip
 
 ```
+
+---
+
+# 🐙 Deploying Asterisk from GitHub
+
+**Repository:** `weby-homelab/voip-installer`
+**Goal:** Quick start on a clean Ubuntu 24.04 server
+
+Great move! Switching to a GitHub installation (`git clone`) is much more professional and reliable than manually copying text. It eliminates encoding errors and ensures you are using the latest version of the code.
+
+### 📋 Requirements
+
+* Clean server running **Ubuntu 24.04**.
+* **Root** access.
+* A **domain name** pointed to the server's IP address.
+
+---
+
+## 🚀 Option 1: Quick Installation (Recommended)
+
+Use this method for a standard deployment. We will install git, download the repository, and run the script immediately.
+
+### Step 1. Preparation & Cloning
+
+Run these commands in the server console:
+
+```bash
+# 1. Update package lists and install git
+apt update && apt install -y git
+
+# 2. Clone the repository
+git clone https://github.com/weby-homelab/voip-installer.git
+
+# 3. Enter the directory
+cd voip-installer
+
+```
+
+### Step 2. Run Installation
+
+Make the script executable and run it with your parameters:
+
+```bash
+# 1. Make the script executable
+chmod +x install_voip.sh
+
+# 2. Run it (REPLACE email and domain WITH YOUR OWN!)
+./install_voip.sh --email admin@your-domain.com --domain your-domain.com
+
+```
+
+---
+
+## ⚡ Option 2: "One-Liner" (For Pros)
+
+If you want to execute everything in a single line (useful for mass deployment or cloud-init scripts):
+
+```bash
+apt update && apt install -y git && \
+git clone https://github.com/weby-homelab/voip-installer.git && \
+cd voip-installer && \
+chmod +x install_voip.sh && \
+./install_voip.sh --email admin@your-domain.com --domain your-domain.com
+
+```
+
+---
+
+## ✅ Post-Installation Checks
+
+After the script finishes, configuration files may be located either inside the repository folder or in system paths (depending on the script logic).
+
+1. **Check Status:**
+```bash
+docker ps
+
+```
+
+
+*(Status should be `Up (healthy)`)*
+2. **Find SIP Passwords:**
+Usually, the script generates a `users.env` file. Check for it:
+```bash
+# Option A (in current folder)
+cat users.env
+
+# Option B (in /root/voip-server, if the script creates it)
+cat /root/voip-server/users.env
+
+```
+
+
+3. **Network Safety Test (Safe Mode):**
+```bash
+docker exec asterisk-voip curl -Is https://google.com | grep HTTP
+
+```
+
+
+*(Expected result: `HTTP/2 200`)*
+
+---
+
+## 💡 Tip: How to Update
+
+If you update the code in the repository (e.g., fix bugs or add features), you only need to run this on the server:
+
+```bash
+cd ~/voip-installer
+git pull
+# Then rerun the script if a configuration update is required
+
+```
