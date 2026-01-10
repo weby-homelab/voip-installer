@@ -78,6 +78,21 @@
 3. Проверьте Firewall:
    nft list table inet voip_firewall
 
+3.1. Критическая проверка (Docker Network Safety Check):
+   Выполните команды для проверки того, что firewall не заблокировал сеть контейнерам:
+   
+   systemctl restart nftables
+   docker exec asterisk-voip curl -Is https://google.com | grep HTTP
+   
+   Ожидаемый результат: HTTP/2 200 (или HTTP/1.1 200).
+   
+   Почему это работает:
+   - Host network: контейнер использует host IP/stack.
+   - Использованный accept: outbound curl -> SYN -> matched as 'established' on return.
+   - No block outbound: политика по умолчанию accept (Safe Mode).
+   
+   Если тест проходит — Safe Mode полностью защищает сетевую связность Docker.
+
 4. Подключение телефона (например, Linphone):
    - Username: 100 (или 101-105)
    - Password: (из users.env)
