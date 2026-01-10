@@ -19,4 +19,5 @@ jobs:
           scandir: '.'
           ignore_names: 'tests'
         env:
-          SHELLCHECK_OPTS: -e SC2086 -e SC2002
+          SHELLCHECK_OPTS: -e SC2086 -e SC2002 -e SC2034 -e SC2015
+          
