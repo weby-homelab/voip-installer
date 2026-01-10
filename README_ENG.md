@@ -37,7 +37,7 @@ nano install_voip.sh
 ```
 
 
-2. **Copy** the FULL code of script `v4.6.2` (`install_eng.sh`) to your clipboard.
+2. **Copy** the FULL code of script `v4.6.2` (`install.sh`) to your clipboard.
 3. **Paste** the code into the terminal:
 * **Windows** (PuTTY/PowerShell): Right-click.
 * **Mac/Linux:** `Cmd+V` or `Ctrl+Shift+V`.
