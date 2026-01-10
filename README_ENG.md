@@ -1,5 +1,3 @@
----
-
 # 📞 Asterisk Deployment Guide
 
 **Version:** `v4.6.2` (Safe Docker Mode)
