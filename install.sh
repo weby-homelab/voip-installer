@@ -56,7 +56,7 @@ SMOKE_TEST=1
 
 DOMAIN=""
 EMAIL=""
-TZ="Europe/Kyiv"
+TZ="UTC"
 EXT_IP=""
 
 ASTERISK_IMAGE="andrius/asterisk:22"
