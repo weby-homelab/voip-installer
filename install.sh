@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
