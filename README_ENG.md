@@ -1,9 +1,9 @@
-================================================================
+---
  ASTERISK DEPLOYMENT GUIDE (v4.6.2)
 ================================================================
 
 This guide describes the installation process for a secure VoIP server (Asterisk 22 + PJSIP + TLS/SRTP + Fail2Ban + NFTables) on a clean Ubuntu 24.04 server.
-
+---
 VERSION: v4.6.2 (Safe Docker Mode)
 FEATURES: 
  - Does NOT reset Docker network settings (no flush ruleset).
