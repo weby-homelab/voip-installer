@@ -161,6 +161,24 @@ Configure your softphone with these settings:
 
 ---
 
+## 🏗 Architecture & Design Choices
+
+The project leverages **`andrius/asterisk:22`** (based on Alpine Linux) instead of heavyweight FreePBX distributions. This is a deliberate choice prioritizing **security** and **performance**.
+
+### Why not FreePBX?
+Official distributions like FreePBX are designed for GUI management, requiring Apache, MySQL, PHP, and NodeJS, often exceeding **1 GB** in size. This creates a massive attack surface and complicates automation.
+
+### Key Advantages:
+* 🚀 **Lightweight:** Image size is only **~60 MB** (vs 1 GB+ for alternatives).
+* ⚡ **Alpine Linux & Musl:** Minimal RAM footprint and instant container startup.
+* 🛡️ **Hardened Security:** The container has **no Web UI**, database, or unnecessary services. Exploiting web vulnerabilities is impossible simply because there is no web server.
+* 📄 **Infrastructure as Code (IaC):** Configuration is generated directly into `.conf` files via script. This is robust and transparent compared to modifying database entries.
+* 🔧 **Pure PJSIP:** Utilizes a modern SIP stack, discarding the legacy `chan_sip`.
+
+> **Verdict:** This is a solution for engineers who need a reliable, fast, and predictable "set and forget" VoIP server.
+
+---
+
 ## 🔧 Troubleshooting
 
 * **No Audio:** Check UDP range `10000-19999` in your hosting panel firewall (e.g., Hetzner Firewall / AWS Security Group).
