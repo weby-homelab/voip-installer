@@ -1,0 +1,64 @@
+name: Integration Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nftables fail2ban qrencode
+
+      - name: Generate Dummy Certs
+        run: |
+          mkdir -p /tmp/certs
+          openssl req -x509 -newkey rsa:2048 -keyout /tmp/certs/privkey.pem -out /tmp/certs/fullchain.pem -days 1 -nodes -subj "/CN=test.local"
+
+      - name: Run Installer (Smoke Test)
+        run: |
+          # Use --yes (though currently unused for logic skips, good practice)
+          # Use --cert-path to avoid Certbot/Port 80 logic
+          # Use --asterisk-uidgid to test manual UID mapping
+          # Use --ext-ip to skip curl/wget external check delays
+          sudo ./install.sh \
+            --domain test.local \
+            --email test@test.local \
+            --cert-path /tmp/certs \
+            --ext-ip 127.0.0.1 \
+            --asterisk-uidgid 1000:1000 \
+            --yes
+
+      - name: Verify Configs Generated
+        run: |
+          if [ ! -f "/root/voip-server/users.env" ]; then
+            echo "users.env missing!"
+            exit 1
+          fi
+          if [ ! -f "/root/voip-server/docker-compose.yml" ]; then
+            echo "docker-compose.yml missing!"
+            exit 1
+          fi
+
+      - name: Check Container Status
+        run: |
+          sleep 10
+          docker ps -a
+          if docker ps | grep -q asterisk-voip; then
+            echo "Container is running!"
+          else
+            echo "Container failed to start!"
+            docker logs asterisk-voip
+            exit 1
+          fi
+
+      - name: Check NFTables
+        run: |
+          sudo nft list table inet voip_firewall

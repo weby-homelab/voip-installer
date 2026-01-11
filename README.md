@@ -165,6 +165,35 @@ Configure your softphone with these settings:
 
 The project leverages **`andrius/asterisk:22`** (based on Alpine Linux) instead of heavyweight FreePBX distributions. This is a deliberate choice prioritizing **security** and **performance**.
 
+```mermaid
+graph TD
+    User[SIP Client / Softphone]
+    Net[Internet / WAN]
+    FW[NFTables Firewall]
+    F2B[Fail2Ban]
+    
+    subgraph Server [Ubuntu 24.04 Host]
+        FW -->|Allow TLS 5061| Docker
+        FW -->|Allow RTP 10000-20000| Docker
+        FW -->|Drop Malicious| Drop[DROP]
+        
+        F2B -.->|Monitors Logs| Logs
+        F2B -.->|Updates Ban List| FW
+        
+        subgraph Docker Container [Asterisk 22]
+            PJSIP[PJSIP Stack]
+            RTP[RTP Engine]
+            Logs[Asterisk Logs]
+        end
+        
+        Docker ---|Host Network Mode| FW
+    end
+    
+    User -->|TLS Encrypted Signaling| Net
+    User -->|SRTP Encrypted Audio| Net
+    Net --> FW
+```
+
 ### Why not FreePBX?
 Official distributions like FreePBX are designed for GUI management, requiring Apache, MySQL, PHP, and NodeJS, often exceeding **1 GB** in size. This creates a massive attack surface and complicates automation.
 

@@ -165,6 +165,35 @@ docker exec asterisk-voip curl -Is https://google.com | grep HTTP
 
 В проекте используется **`andrius/asterisk:22`** (на базе Alpine Linux) вместо тяжеловесных сборок FreePBX. Это осознанный выбор в пользу **безопасности** и **производительности**.
 
+```mermaid
+graph TD
+    User[SIP Клиент / Софтфон]
+    Net[Интернет / WAN]
+    FW[NFTables Firewall]
+    F2B[Fail2Ban]
+    
+    subgraph Server [Ubuntu 24.04 Host]
+        FW -->|Разрешить TLS 5061| Docker
+        FW -->|Разрешить RTP 10000-20000| Docker
+        FW -->|Блокировать атаки| Drop[DROP]
+        
+        F2B -.->|Читает логи| Logs
+        F2B -.->|Обновляет бан-лист| FW
+        
+        subgraph Docker Container [Asterisk 22]
+            PJSIP[PJSIP Stack]
+            RTP[RTP Engine]
+            Logs[Asterisk Logs]
+        end
+        
+        Docker ---|Режим Host Network| FW
+    end
+    
+    User -->|TLS Сигнализация| Net
+    User -->|SRTP Голос (Шифрован)| Net
+    Net --> FW
+```
+
 ### Почему не FreePBX?
 Официальные дистрибутивы (FreePBX) предназначены для управления через GUI, тянут за собой Apache, MySQL, PHP и NodeJS, занимая **>1 ГБ**. Это создает огромную поверхность для атак и усложняет автоматизацию.
 
