@@ -38,14 +38,18 @@ jobs:
 
       - name: Verify Configs Generated
         run: |
-          if [ ! -f "/root/voip-server/users.env" ]; then
+          # Use sudo to check files in /root
+          if ! sudo test -f "/root/voip-server/users.env"; then
             echo "users.env missing!"
             exit 1
           fi
-          if [ ! -f "/root/voip-server/docker-compose.yml" ]; then
+          echo "users.env found."
+          
+          if ! sudo test -f "/root/voip-server/docker-compose.yml"; then
             echo "docker-compose.yml missing!"
             exit 1
           fi
+          echo "docker-compose.yml found."
 
       - name: Check Container Status
         run: |
