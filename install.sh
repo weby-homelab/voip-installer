@@ -5,14 +5,14 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7.1
+# VoIP Server Installer v4.7.2
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Safe Mode - no flush ruleset) + Fail2Ban
-# Changes v4.7.1: Stability fixes (curl check, safe grep, local image check)
+# Changes v4.7.2: Fix exit code masking in ensure_nftables_strict
 # ============================================================ 
 
-VERSION="4.7.1"
+VERSION="4.7.2"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'
@@ -467,7 +467,8 @@ ensure_nftables_strict(){
   
   # Backup existing table if it exists
   if nft list table inet voip_firewall >/dev/null 2>&1; then
-    local bfile="${PROJECT_DIR}/nft_backup_$(date -u +%Y%m%dT%H%M%SZ).conf"
+    local bfile
+    bfile="${PROJECT_DIR}/nft_backup_$(date -u +%Y%m%dT%H%M%SZ).conf"
     log_i "Backing up existing nftables table to $bfile"
     nft list table inet voip_firewall > "$bfile" 2>/dev/null || log_w "Failed to dump existing table"
     nft delete table inet voip_firewall 2>/dev/null || true

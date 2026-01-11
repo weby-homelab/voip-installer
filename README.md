@@ -8,7 +8,7 @@
 
 # 📞 Asterisk Deployment Guide
 
-**Version:** `v4.7.1` (Safe Docker Mode)
+**Version:** `v4.7.2` (Safe Docker Mode)
 
 This guide describes the installation process for a secure VoIP server (**Asterisk 22** + **PJSIP** + **TLS/SRTP** + **Fail2Ban** + **NFTables**) on a clean **Ubuntu 24.04** server.
 
