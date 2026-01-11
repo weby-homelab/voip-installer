@@ -5,14 +5,14 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.6.2
-# Based on v4.6.1 + CRITICAL FIX: NFTables Docker Safety
+# VoIP Server Installer v4.7
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Safe Mode - no flush ruleset) + Fail2Ban
+# Changes v4.7: Enhanced safety, Compose V2 support, NFT backups
 # ============================================================ 
 
-VERSION="4.6.2"
+VERSION="4.7"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'
@@ -58,6 +58,8 @@ DOMAIN=""
 EMAIL=""
 TZ="UTC"
 EXT_IP=""
+CERT_PATH=""      # Custom certs path
+ASTERISK_UIDGID="" # Custom UID:GID
 
 ASTERISK_IMAGE="andrius/asterisk:22"
 SIP_USERS=({100..105})
@@ -67,16 +69,52 @@ RTP_MAX=19999
 F2B_MAXRETRY=2
 F2B_FINDTIME="600m"
 F2B_BANTIME="120h"
+TLS_METHODS="tlsv1_2 tlsv1_3"
 
 # ---------- helpers ----------
 have(){ command -v "$1" >/dev/null 2>&1; }
 need_cmd(){ have "$1" || die "Command not found: $1"; }
 
+detect_compose_cmd(){
+  if docker compose version >/dev/null 2>&1; then
+    echo "docker compose"
+  elif command -v docker-compose >/dev/null 2>&1; then
+    echo "docker-compose"
+  else
+    die "Neither 'docker compose' nor 'docker-compose' found. Install Docker Compose."
+  fi
+}
+
+restart_service(){
+  local svc="$1"
+  if have systemctl; then
+    systemctl restart "$svc" || log_w "Failed to restart $svc via systemctl"
+  elif have service; then
+    service "$svc" restart || log_w "Failed to restart $svc via service"
+  else
+    log_w "System service manager not found. Please restart '$svc' manually."
+  fi
+}
+
 usage(){
   cat <<USAGE
 VoIP Server Installer v${VERSION}
 Usage:
-  ./install_v4.6.2.sh --domain example.com [--email you@example.com] [--ext-ip 1.2.3.4] [--tz Europe/Kyiv] [--update] [--yes]
+  ./install.sh --domain example.com [--email you@example.com] [options]
+
+Options:
+  --domain DOMAIN       Domain name for the server
+  --email EMAIL         Email for Let's Encrypt
+  --ext-ip IP           Manually specify external IP
+  --cert-path PATH      Path to existing fullchain.pem/privkey.pem (skips certbot)
+  --asterisk-uidgid U:G Manually specify Asterisk UID:GID (e.g. 1000:1000)
+  --tz TIMEZONE         Timezone (default: UTC)
+  --update              Update configs without overwriting users.env
+  --yes                 Skip confirmation prompts
+
+Note on DNS-01:
+  If port 80 is not available, use --cert-path to provide certificates generated 
+  manually via 'certbot certonly --manual --preferred-challenges dns -d DOMAIN'.
 USAGE
   exit 0
 }
@@ -96,10 +134,17 @@ safe_write(){
   local dir tmp
   dir="$(dirname "$path")"
   install -d -m 0755 "$dir"
-  tmp="$(mktemp)"
+  tmp="$(mktemp "$dir/.tmp.XXXXXXXX")"
+  
+  # Set trap to clean up tmp file on return or error within this scope
+  trap 'rm -f "$tmp"' RETURN
+  
   cat > "$tmp"
   install -o "$owner" -g "$group" -m "$mode" "$tmp" "$path"
+  
+  # Explicit remove not strictly needed due to trap, but good practice
   rm -f "$tmp"
+  trap - RETURN
 }
 
 detect_ext_ip(){
@@ -107,10 +152,20 @@ detect_ext_ip(){
   if [[ -n "$EXT_IP" ]]; then
     echo "$EXT_IP"; return 0
   fi
-  if have curl; then ip="$(curl -4fsS https://api.ipify.org 2>/dev/null || true)"; fi
-  if [[ -z "$ip" ]] && have wget; then ip="$(wget -qO- https://api.ipify.org 2>/dev/null || true)"; fi
-  [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || die "Could not detect external IPv4. Use --ext-ip."
-  echo "$ip"
+  
+  local services=(https://api.ipify.org https://ifconfig.co https://icanhazip.com)
+  for svc in "${services[@]}"; do
+    ip="$(curl -4fsS "$svc" 2>/dev/null || true)"
+    if [[ -z "$ip" ]] && have wget; then
+      ip="$(wget -qO- "$svc" 2>/dev/null || true)"
+    fi
+    if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+      echo "$ip"
+      return 0
+    fi
+  done
+  
+  die "Could not detect external IPv4. Use --ext-ip."
 }
 
 rand_b64(){ openssl rand -base64 "$1" | tr -d '\n'; }
@@ -127,13 +182,23 @@ check_ports_free(){
   log_i "Checking ports..."
   local bad=0
   if ss -H -lnt "sport = :$PORT_SIP_TLS" | grep -q .; then log_w "TCP $PORT_SIP_TLS is busy"; bad=1; fi
+  if [[ -z "$CERT_PATH" ]]; then
+    if ss -H -lnt "sport = :80" | grep -q .; then log_w "TCP 80 is busy (needed for Certbot)"; bad=1; fi
+  fi
   [[ $bad -eq 0 ]] && log_ok "Ports are free." || log_w "Port conflicts detected."
 }
 
 detect_asterisk_uid_gid(){
+  if [[ -n "$ASTERISK_UIDGID" ]]; then
+    echo "$ASTERISK_UIDGID"
+    log_i "Using manual Asterisk UID:GID: $ASTERISK_UIDGID"
+    return
+  fi
+  
   local uid gid
   uid="$(docker run --rm "$ASTERISK_IMAGE" id -u asterisk 2>/dev/null || echo 1000)"
   gid="$(docker run --rm "$ASTERISK_IMAGE" id -g asterisk 2>/dev/null || echo 999)"
+  log_i "Detected Asterisk UID:GID: $uid:$gid"
   echo "$uid:$gid"
 }
 
@@ -144,7 +209,11 @@ seed_asterisk_dirs(){
 }
 
 ensure_users_env(){
-  [[ -f "$USERS_ENV" ]] && { log_ok "users.env exists"; return; }
+  if [[ -f "$USERS_ENV" ]]; then
+    log_ok "users.env exists, preserving."
+    return
+  fi
+  
   log_i "Generating users.env..."
   local tmp
   tmp="$(mktemp)"
@@ -156,17 +225,37 @@ ensure_users_env(){
 }
 
 read_env_kv(){
-  grep -E "^$2=" "$1" | head -n1 | cut -d= -f2- || true
+  local file="$1"
+  local key="$2"
+  # Escape regex special chars in key
+  local key_escaped
+  key_escaped="$(printf '%s' "$key" | sed -e 's/[]\/\.$\*\^[]/\\&/g')"
+  grep -E "^${key_escaped}=" "$file" | head -n1 | cut -d= -f2- || true
 }
 
 sync_certs(){
+  # If user provided custom certs path
+  if [[ -n "$CERT_PATH" ]]; then
+    if [[ -f "$CERT_PATH/fullchain.pem" && -f "$CERT_PATH/privkey.pem" ]]; then
+      log_i "Using custom certificates from $CERT_PATH"
+      install -d -m 0755 "$CERTS_DIR"
+      install -m 0644 "$CERT_PATH/fullchain.pem" "$CERTS_DIR/fullchain.pem"
+      install -m 0640 "$CERT_PATH/privkey.pem" "$CERTS_DIR/privkey.pem"
+      return
+    else
+      die "Custom certs not found at $CERT_PATH"
+    fi
+  fi
+
   local live="/etc/letsencrypt/live/${DOMAIN}"
   if [[ -d "$live" && -f "$live/fullchain.pem" && -f "$live/privkey.pem" ]]; then
     log_ok "Certificates found in $live"
   else
-    log_w "No certificates found. Need port 80 free for certbot."
-    [[ -n "$EMAIL" ]] || die "Cert missing. Provide --email."
-    if ss -H -lnt "sport = :80" | grep -q .; then die "Port 80 busy! Free it or use DNS-01."; fi
+    log_w "No certificates found. Starting Certbot..."
+    if ss -H -lnt "sport = :80" | grep -q .; then 
+      die "Port 80 busy! Cannot run certbot standalone. Free port 80 or use --cert-path with manual certs."
+    fi
+    [[ -n "$EMAIL" ]] || die "Cert missing. Provide --email or --cert-path."
     need_cmd certbot
     certbot certonly --standalone --non-interactive --agree-tos -m "$EMAIL" -d "$DOMAIN"
   fi
@@ -177,6 +266,8 @@ sync_certs(){
 }
 
 ensure_certbot_hook(){
+  [[ -n "$CERT_PATH" ]] && return 0 # Skip hook if using custom path
+
   local hook="/etc/letsencrypt/renewal-hooks/deploy/voip-renew.sh"
   safe_write "$hook" 0755 root root <<EOF
 #!/usr/bin/env bash
@@ -193,7 +284,8 @@ EOF
 
 generate_asterisk_conf(){
   local ext_ip="$1"
-  log_i "Generating Asterisk configs (Ext IP: \$ext_ip)..."
+  local tls_methods_comma="${TLS_METHODS// /,}"
+  log_i "Generating Asterisk configs (IP: $ext_ip, TLS: $tls_methods_comma)..."
 
   safe_write "$ASTERISK_CFG_DIR/rtp.conf" 0640 root root <<EOF
 [general]
@@ -260,7 +352,7 @@ local_net=10.0.0.0/8
 cert_file=/etc/asterisk/certs/fullchain.pem
 priv_key_file=/etc/asterisk/certs/privkey.pem
 ca_list_file=/etc/ssl/certs/ca-certificates.crt
-method=tlsv1_3
+method=${tls_methods_comma}
 verify_client=no
 require_client_cert=no
 external_media_address=${ext_ip}
@@ -303,6 +395,7 @@ EOF
 }
 
 generate_compose(){
+  # Use absolute paths in compose file to allow running from anywhere
   safe_write "$COMPOSE_FILE" 0644 root root <<EOF
 name: voip-server
 services:
@@ -314,11 +407,11 @@ services:
     environment:
       - TZ=${TZ}
     volumes:
-      - ./config/asterisk:/etc/asterisk:ro
-      - ./certs:/etc/asterisk/certs:ro
-      - ./logs/asterisk:/var/log/asterisk
-      - ./data/asterisk:/var/lib/asterisk
-      - ./run/asterisk:/var/run/asterisk
+      - ${ASTERISK_CFG_DIR}:/etc/asterisk:ro
+      - ${CERTS_DIR}:/etc/asterisk/certs:ro
+      - ${LOGS_DIR}/asterisk:/var/log/asterisk
+      - ${DATA_DIR}/asterisk:/var/lib/asterisk
+      - ${ASTERISK_RUN_DIR}:/var/run/asterisk
     logging:
       driver: json-file
       options:
@@ -336,12 +429,15 @@ fix_permissions(){
   local uidgid="$1"
   local uid="${uidgid%:*}"
   local gid="${uidgid#*:}"
+  
+  log_i "Fixing permissions for $uid:$gid..."
   chown -R root:"$gid" "$ASTERISK_CFG_DIR"
   find "$ASTERISK_CFG_DIR" -type d -exec chmod 0750 {} +
   find "$ASTERISK_CFG_DIR" -type f -exec chmod 0640 {} +
   chown -R "$uid:$gid" "$DATA_DIR/asterisk" "$LOGS_DIR/asterisk" "$ASTERISK_RUN_DIR"
   chmod -R 0770 "$DATA_DIR/asterisk"
   chmod -R 0775 "$LOGS_DIR/asterisk" "$ASTERISK_RUN_DIR"
+  
   if [[ -f "$CERTS_DIR/privkey.pem" ]]; then
     chown root:"$gid" "$CERTS_DIR/privkey.pem"
     chmod 0640 "$CERTS_DIR/privkey.pem"
@@ -354,24 +450,22 @@ fix_permissions(){
 
 ensure_nftables_strict(){
   need_cmd nft
-  # CRITICAL FIX: Do NOT flush ruleset. It kills Docker.
-  # We use a dedicated table 'inet voip_firewall' and flush only IT.
+  
+  # Backup existing table if it exists
+  if nft list table inet voip_firewall >/dev/null 2>&1; then
+    local bfile="${PROJECT_DIR}/nft_backup_$(date -u +%Y%m%dT%H%M%SZ).conf"
+    log_i "Backing up existing nftables table to $bfile"
+    nft list table inet voip_firewall > "$bfile" 2>/dev/null || log_w "Failed to dump existing table"
+    nft delete table inet voip_firewall 2>/dev/null || true
+  fi
   
   safe_write "$NFT_MAIN" 0644 root root <<EOF
 #!/usr/sbin/nft -f
 # WARNING: Do NOT add 'flush ruleset' here. It breaks Docker.
 
-# Define our dedicated table
 table inet voip_firewall {
-    # Start fresh for THIS table only
     chain input {
         type filter hook input priority filter;
-        
-        # We explicitly DROP what we don't want, but since policy is accept (to not kill docker traffic in other tables),
-        # we must be careful.
-        # BETTER STRATEGY for a Safe Script:
-        # Use priority 0 (standard). 
-        # Rules here run ALONGSIDE Docker's rules.
         
         # 1. Allow established
         ct state { established, related } accept
@@ -397,26 +491,11 @@ table inet voip_firewall {
         # 7. DNS
         udp dport { 53, 853 } accept
         tcp dport { 53, 853 } accept
-        
-        # Explicit Drop for common junk is risky without 'drop' policy.
-        # But setting policy drop here affects the whole input hook for this priority.
-        # Safe bet: We don't enforce strict DROP on the host in this script to avoid 
-        # conflict with Docker's complex iptables-nft chains.
-        # We rely on specific Accepts.
-        
-        # If you WANT strict drop, you must ensure Docker traffic is allowed explicitly.
-        # For now, we leave policy accept but allow F2B to insert drops.
     }
-    
-    # We do NOT touch forward chain to avoid breaking Docker networking.
 }
 EOF
-  # Reload only this table if possible, but -f loads the file. 
-  # Since the file doesn't have flush ruleset, it adds/modifies.
-  # To be clean, we delete OUR table first.
-  nft delete table inet voip_firewall 2>/dev/null || true
-  nft -f "$NFT_MAIN"
-  log_ok "nftables (Safe Mode) configured."
+nft -f "$NFT_MAIN"
+log_ok "nftables (Safe Mode) configured."
 }
 
 ensure_fail2ban(){
@@ -427,13 +506,9 @@ ensure_fail2ban(){
 
   safe_write "$F2B_FILTER" 0644 root root <<'EOF'
 [Definition]
-failregex = SecurityEvent=\"(?:InvalidAccountID|ChallengeResponseFailed)\".*RemoteAddress=\"IPV[46]/(?:TLS|TCP|UDP)/<HOST>/\\d+\" 
+failregex = SecurityEvent="(?:InvalidAccountID|ChallengeResponseFailed)".*RemoteAddress="IPV[46]/(?:TLS|TCP|UDP)/<HOST>/\d+" 
 ignoreregex = 
 EOF
-
-  # We use standard nftables-multiport or similar, as custom table hacking is brittle.
-  # But since we have a custom table, we can tell fail2ban to use it? 
-  # Easier: Use 'iptables-multiport' which maps to nftables via legacy shim, works out of box with Docker.
   
   safe_write "$F2B_JAIL_LOCAL" 0644 root root <<EOF
 [DEFAULT]
@@ -449,7 +524,8 @@ backend  = auto
 findtime = ${F2B_FINDTIME}
 maxretry = ${F2B_MAXRETRY}
 bantime  = ${F2B_BANTIME}
-# Using standard iptables action is safest with Docker present
+# Note: Using iptables-allports acts as a shim for nftables in modern fail2ban.
+# If full nftables native support is needed, update action to nftables-allports
 action   = iptables-allports[name=asterisk-pjsip]
 
 [sshd]
@@ -469,7 +545,7 @@ bantime  = 30d
 action   = iptables-allports
 EOF
 
-  systemctl restart fail2ban
+  restart_service fail2ban
   log_ok "fail2ban configured."
 }
 
@@ -496,6 +572,15 @@ generate_qr_codes(){
 }
 
 # ---------- main ----------
+
+# Early dependency check (High Priority)
+need_cmd ss
+need_cmd openssl
+need_cmd nft
+need_cmd docker
+COMPOSE_CMD="$(detect_compose_cmd)"
+log_i "Using compose command: $COMPOSE_CMD"
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --yes) YES=1; shift ;; 
@@ -503,7 +588,9 @@ while [[ $# -gt 0 ]]; do
     --domain) DOMAIN="${2:-}"; shift 2 ;; 
     --email) EMAIL="${2:-}"; shift 2 ;; 
     --tz) TZ="${2:-}"; shift 2 ;; 
-    --ext-ip) EXT_IP="${2:-}"; shift 2 ;; 
+    --ext-ip) EXT_IP="${2:-}"; shift 2 ;;
+    --cert-path) CERT_PATH="${2:-}"; shift 2 ;;
+    --asterisk-uidgid) ASTERISK_UIDGID="${2:-}"; shift 2 ;;
     -h|--help) usage ;; 
     *) die "Unknown arg: $1" ;; 
   esac
@@ -517,9 +604,11 @@ EXT_IP="$(detect_ext_ip)"
 
 if [[ "$UPDATE" -eq 0 ]]; then
   check_ports_free
+  ensure_users_env
+else
+  ensure_users_env # Will skip if exists
 fi
 
-ensure_users_env
 sync_certs
 ensure_certbot_hook
 
@@ -534,7 +623,7 @@ ensure_logrotate
 generate_qr_codes
 
 log_i "Starting Asterisk..."
-docker compose -f "$COMPOSE_FILE" up -d --build
+$COMPOSE_CMD -f "$COMPOSE_FILE" up -d --build
 
 ensure_fail2ban
 
