@@ -166,8 +166,6 @@ docker exec asterisk-voip curl -Is https://google.com | grep HTTP
 
 У проєкті використовується **`andrius/asterisk:22`** (на базі Alpine Linux) замість великовагових збірок FreePBX. Це свідомий вибір на користь **безпеки** та **продуктивності**.
 
----
-
 ```mermaid
 graph TD
     User[SIP Клієнт / Софтфон]
