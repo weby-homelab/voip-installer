@@ -174,12 +174,12 @@ graph TD
     F2B[Fail2Ban]
     
     subgraph Server [Ubuntu 24.04 Host]
-        FW -->|Дозволити TLS 5061| Docker
-        FW -->|Дозволити RTP 10000-20000| Docker
-        FW -->|Блокувати атаки| Drop[DROP]
+        FW -->|"Дозволити TLS 5061"| Docker
+        FW -->|"Дозволити RTP 10000-20000"| Docker
+        FW -->|"Блокувати атаки"| Drop[DROP]
         
-        F2B -.->|Читає логи| Logs
-        F2B -.->|Оновлює бан-лист| FW
+        F2B -.->|"Читає логи"| Logs
+        F2B -.->|"Оновлює бан-лист"| FW
         
         subgraph Docker Container [Asterisk 22]
             PJSIP[PJSIP Stack]
@@ -187,11 +187,11 @@ graph TD
             Logs[Asterisk Logs]
         end
         
-        Docker ---|Режим Host Network| FW
+        Docker ---|"Режим Host Network"| FW
     end
     
-    User -->|TLS Сигналізація| Net
-    User -->|SRTP Голос (Шифрований)| Net
+    User -->|"TLS Сигналізація"| Net
+    User -->|"SRTP Голос (Шифрований)"| Net
     Net --> FW
 ```
 
