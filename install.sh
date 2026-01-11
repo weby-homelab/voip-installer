@@ -199,7 +199,7 @@ check_ports_free(){
 detect_asterisk_uid_gid(){
   if [[ -n "$ASTERISK_UIDGID" ]]; then
     echo "$ASTERISK_UIDGID"
-    log_i "Using manual Asterisk UID:GID: $ASTERISK_UIDGID"
+    log_i "Using manual Asterisk UID:GID: $ASTERISK_UIDGID" >&2
     return
   fi
 
@@ -208,10 +208,10 @@ detect_asterisk_uid_gid(){
   if docker image inspect "$ASTERISK_IMAGE" >/dev/null 2>&1; then
     uid="$(docker run --rm "$ASTERISK_IMAGE" id -u asterisk 2>/dev/null || echo 1000)"
     gid="$(docker run --rm "$ASTERISK_IMAGE" id -g asterisk 2>/dev/null || echo 999)"
-    log_i "Detected Asterisk UID:GID from image: $uid:$gid"
+    log_i "Detected Asterisk UID:GID from image: $uid:$gid" >&2
   else
-    log_w "Image $ASTERISK_IMAGE not found locally. Using default UID:GID 1000:999 to avoid pull."
-    log_w "Use --asterisk-uidgid if you need custom permissions."
+    log_w "Image $ASTERISK_IMAGE not found locally. Using default UID:GID 1000:999 to avoid pull." >&2
+    log_w "Use --asterisk-uidgid if you need custom permissions." >&2
     uid=1000
     gid=999
   fi
