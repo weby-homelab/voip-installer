@@ -1,18 +1,18 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7
+# VoIP Server Installer v4.7.1
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Safe Mode - no flush ruleset) + Fail2Ban
-# Changes v4.7: Enhanced safety, Compose V2 support, NFT backups
+# Changes v4.7.1: Stability fixes (curl check, safe grep, local image check)
 # ============================================================ 
 
-VERSION="4.7"
+VERSION="4.7.1"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'
@@ -155,10 +155,18 @@ detect_ext_ip(){
   
   local services=(https://api.ipify.org https://ifconfig.co https://icanhazip.com)
   for svc in "${services[@]}"; do
-    ip="$(curl -4fsS "$svc" 2>/dev/null || true)"
-    if [[ -z "$ip" ]] && have wget; then
+    if have curl; then
+      ip="$(curl -4fsS "$svc" 2>/dev/null || true)"
+    elif have wget; then
       ip="$(wget -qO- "$svc" 2>/dev/null || true)"
+    else
+      log_w "Neither curl nor wget available to detect external IP from $svc"
+      continue
     fi
+    
+    # Trim whitespace
+    ip="${ip//[[:space:]]/}" 
+    
     if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
       echo "$ip"
       return 0
@@ -194,16 +202,25 @@ detect_asterisk_uid_gid(){
     log_i "Using manual Asterisk UID:GID: $ASTERISK_UIDGID"
     return
   fi
-  
+
   local uid gid
-  uid="$(docker run --rm "$ASTERISK_IMAGE" id -u asterisk 2>/dev/null || echo 1000)"
-  gid="$(docker run --rm "$ASTERISK_IMAGE" id -g asterisk 2>/dev/null || echo 999)"
-  log_i "Detected Asterisk UID:GID: $uid:$gid"
+  # Check if image exists locally to avoid implicit pull delay/error
+  if docker image inspect "$ASTERISK_IMAGE" >/dev/null 2>&1; then
+    uid="$(docker run --rm "$ASTERISK_IMAGE" id -u asterisk 2>/dev/null || echo 1000)"
+    gid="$(docker run --rm "$ASTERISK_IMAGE" id -g asterisk 2>/dev/null || echo 999)"
+    log_i "Detected Asterisk UID:GID from image: $uid:$gid"
+  else
+    log_w "Image $ASTERISK_IMAGE not found locally. Using default UID:GID 1000:999 to avoid pull."
+    log_w "Use --asterisk-uidgid if you need custom permissions."
+    uid=1000
+    gid=999
+  fi
   echo "$uid:$gid"
 }
 
 seed_asterisk_dirs(){
   log_i "Seeding base Asterisk files..."
+  # If image missing, this might pull, but user was warned.
   docker run --rm --user 0:0 -v "$ASTERISK_CFG_DIR:/dst" "$ASTERISK_IMAGE" sh -c 'cp -an /etc/asterisk/. /dst/ 2>/dev/null || true'
   docker run --rm --user 0:0 -v "$DATA_DIR/asterisk:/dst" "$ASTERISK_IMAGE" sh -c 'cp -an /var/lib/asterisk/. /dst/ 2>/dev/null || true'
 }
@@ -227,10 +244,8 @@ ensure_users_env(){
 read_env_kv(){
   local file="$1"
   local key="$2"
-  # Escape regex special chars in key
-  local key_escaped
-  key_escaped="$(printf '%s' "$key" | sed -e 's/[]\/\.$\*\^[]/\\&/g')"
-  grep -E "^${key_escaped}=" "$file" | head -n1 | cut -d= -f2- || true
+  # Use fixed-string grep to avoid regexp pitfalls
+  grep -F "${key}=" "$file" | head -n1 | cut -d= -f2- || true
 }
 
 sync_certs(){
@@ -397,7 +412,6 @@ EOF
 generate_compose(){
   # Use absolute paths in compose file to allow running from anywhere
   safe_write "$COMPOSE_FILE" 0644 root root <<EOF
-name: voip-server
 services:
   asterisk:
     image: ${ASTERISK_IMAGE}
@@ -578,6 +592,8 @@ need_cmd ss
 need_cmd openssl
 need_cmd nft
 need_cmd docker
+[[ -z "$CERT_PATH" ]] && need_cmd certbot # Only if cert-path not set
+
 COMPOSE_CMD="$(detect_compose_cmd)"
 log_i "Using compose command: $COMPOSE_CMD"
 
@@ -602,11 +618,10 @@ require_root
 ensure_dirs
 EXT_IP="$(detect_ext_ip)"
 
+ensure_users_env # Does internal check for existence
+
 if [[ "$UPDATE" -eq 0 ]]; then
   check_ports_free
-  ensure_users_env
-else
-  ensure_users_env # Will skip if exists
 fi
 
 sync_certs
