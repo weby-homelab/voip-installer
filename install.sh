@@ -639,7 +639,10 @@ ensure_logrotate
 generate_qr_codes
 
 log_i "Starting Asterisk..."
+OLD_IFS="$IFS"
+IFS=$' \n\t'
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d --build
+IFS="$OLD_IFS"
 
 ensure_fail2ban
 
