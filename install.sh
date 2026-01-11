@@ -180,7 +180,7 @@ rand_b64(){ openssl rand -base64 "$1" | tr -d '\n'; }
 
 ensure_dirs(){
   install -d -m 0755 "$PROJECT_DIR" "$CFG_DIR" "$CERTS_DIR" "$DATA_DIR" "$LOGS_DIR" "$RUN_DIR"
-  install -d -m 0755 "$ASTERISK_CFG_DIR"
+  install -d -m 0755 "$ASTERISK_CFG_DIR" "$ASTERISK_CFG_DIR/certs"
   install -d -m 0755 "$DATA_DIR/asterisk" "$LOGS_DIR/asterisk" "$LOGS_DIR/asterisk/cdr-csv"
   install -d -m 0775 "$ASTERISK_RUN_DIR"
   install -d -m 0700 "$QR_DIR"
