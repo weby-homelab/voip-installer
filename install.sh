@@ -588,16 +588,6 @@ generate_qr_codes(){
 
 # ---------- main ----------
 
-# Early dependency check (High Priority)
-need_cmd ss
-need_cmd openssl
-need_cmd nft
-need_cmd docker
-[[ -z "$CERT_PATH" ]] && need_cmd certbot # Only if cert-path not set
-
-COMPOSE_CMD="$(detect_compose_cmd)"
-log_i "Using compose command: $COMPOSE_CMD"
-
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --yes) YES=1; shift ;; 
@@ -612,6 +602,16 @@ while [[ $# -gt 0 ]]; do
     *) die "Unknown arg: $1" ;; 
   esac
 done
+
+# Early dependency check (High Priority)
+need_cmd ss
+need_cmd openssl
+need_cmd nft
+need_cmd docker
+[[ -z "$CERT_PATH" ]] && need_cmd certbot # Only if cert-path not set
+
+COMPOSE_CMD="$(detect_compose_cmd)"
+log_i "Using compose command: $COMPOSE_CMD"
 
 [[ -n "$DOMAIN" ]] || die "Missing --domain"
 require_root

@@ -19,8 +19,8 @@ jobs:
 
       - name: Generate Dummy Certs
         run: |
-          mkdir -p /tmp/certs
-          openssl req -x509 -newkey rsa:2048 -keyout /tmp/certs/privkey.pem -out /tmp/certs/fullchain.pem -days 1 -nodes -subj "/CN=test.local"
+          mkdir -p ./dummy-certs
+          openssl req -x509 -newkey rsa:2048 -keyout ./dummy-certs/privkey.pem -out ./dummy-certs/fullchain.pem -days 1 -nodes -subj "/CN=test.local"
 
       - name: Run Installer (Smoke Test)
         run: |
@@ -31,7 +31,7 @@ jobs:
           sudo ./install.sh \
             --domain test.local \
             --email test@test.local \
-            --cert-path /tmp/certs \
+            --cert-path ./dummy-certs \
             --ext-ip 127.0.0.1 \
             --asterisk-uidgid 1000:1000 \
             --yes
