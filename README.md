@@ -210,29 +210,51 @@ cd voip-installer
 
 ### Step 2. Run Installation
 
+
+
 Make the script executable and run it with your parameters:
 
+
+
 ```bash
+
 # 1. Make the script executable
-chmod +x install_voip.sh
+
+chmod +x install.sh
+
+
 
 # 2. Run it (REPLACE email and domain WITH YOUR OWN!)
-./install_voip.sh --email admin@your-domain.com --domain your-domain.com
+
+./install.sh --email admin@your-domain.com --domain your-domain.com
 
 ```
 
+
+
 ---
+
+
 
 ## ⚡ Option 2: "One-Liner" (For Pros)
 
+
+
 If you want to execute everything in a single line (useful for mass deployment or cloud-init scripts):
 
+
+
 ```bash
+
 apt update && apt install -y git && \
+
 git clone https://github.com/weby-homelab/voip-installer.git && \
+
 cd voip-installer && \
-chmod +x install_voip.sh && \
-./install_voip.sh --email admin@your-domain.com --domain your-domain.com
+
+chmod +x install.sh && \
+
+./install.sh --email admin@your-domain.com --domain your-domain.com
 
 ```
 

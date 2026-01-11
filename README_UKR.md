@@ -214,29 +214,75 @@ cd voip-installer
 
 ### Крок 2. Запуск установки
 
+
+
+
+
 Надаємо права на виконання та запускаємо скрипт з вашими параметрами:
 
+
+
+
+
 ```bash
+
+
 # 1. Робимо скрипт виконуваним
-chmod +x install_voip.sh
+
+
+chmod +x install.sh
+
+
+
+
 
 # 2. Запускаємо (ЗАМІНІТЬ email та domain НА СВОЇ!)
-./install_voip.sh --email admin@your-domain.com --domain your-domain.com
+
+
+./install.sh --email admin@your-domain.com --domain your-domain.com
+
 
 ```
 
+
+
+
+
 ---
+
+
+
+
 
 ## ⚡ Варіант 2: "One-Liner" (для профі)
 
+
+
+
+
 Якщо ви хочете виконати все одним рядком (зручно для масового розгортання або скриптів cloud-init):
 
+
+
+
+
 ```bash
+
+
 apt update && apt install -y git && \
+
+
 git clone https://github.com/weby-homelab/voip-installer.git && \
+
+
 cd voip-installer && \
-chmod +x install_voip.sh && \
-./install_voip.sh --email admin@your-domain.com --domain your-domain.com
+
+
+chmod +x install.sh && \
+
+
+./install.sh --email admin@your-domain.com --domain your-domain.com
+
 
 ```
 
