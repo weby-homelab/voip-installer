@@ -30,7 +30,7 @@ on_err(){
 trap on_err ERR
 
 # ---------- paths ----------
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+# SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_DIR="/root/voip-server"
 CFG_DIR="$PROJECT_DIR/config"
 CERTS_DIR="$PROJECT_DIR/certs"
@@ -52,7 +52,7 @@ F2B_FILTER="/etc/fail2ban/filter.d/asterisk-pjsip-security.conf"
 # ---------- defaults ----------
 YES=0
 UPDATE=0
-SMOKE_TEST=1
+# SMOKE_TEST=1
 
 DOMAIN=""
 EMAIL=""
@@ -193,7 +193,12 @@ check_ports_free(){
   if [[ -z "$CERT_PATH" ]]; then
     if ss -H -lnt "sport = :80" | grep -q .; then log_w "TCP 80 is busy (needed for Certbot)"; bad=1; fi
   fi
-  [[ $bad -eq 0 ]] && log_ok "Ports are free." || log_w "Port conflicts detected."
+
+  if [[ $bad -eq 0 ]]; then
+    log_ok "Ports are free."
+  else
+    log_w "Port conflicts detected."
+  fi
 }
 
 detect_asterisk_uid_gid(){
@@ -602,6 +607,9 @@ while [[ $# -gt 0 ]]; do
     *) die "Unknown arg: $1" ;; 
   esac
 done
+
+# "Use" variable to satisfy ShellCheck (SC2034)
+: "$YES"
 
 # Early dependency check (High Priority)
 need_cmd ss
