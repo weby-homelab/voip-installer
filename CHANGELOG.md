@@ -42,3 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - **Fail2Ban:** Integration with `iptables-allports` action.
 - **SIP:** Enforced TLS 1.3 and SRTP.
+
+## [4.7.3] - 2026-01-23
+### Changed
+- Enforced 100MB log limit for Systemd Journal (SystemMaxUse=100M).
+- Enforced 100MB log limit for Docker containers (20MB x 5 files) via daemon.json.
+- Fixed typo in README commands (ft -> nft).

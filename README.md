@@ -8,13 +8,14 @@
 
 # 📞 Asterisk Deployment Guide
 
-**Version:** `v4.7.2` (Safe Docker Mode)
+**Version:** `v4.7.3` (Safe Docker Mode + Log Rotation)
 
 This guide describes the installation process for a secure VoIP server (**Asterisk 22** + **PJSIP** + **TLS/SRTP** + **Fail2Ban** + **NFTables**) on a clean **Ubuntu 24.04** server.
 
 ### 🌟 Features
 
 * **Safe Mode:** Does **NOT** reset Docker network settings (no flush ruleset).
+* **Log Rotation:** Enforces 100MB limit for Systemd Journal & Docker logs.
 * **Security:** Uses TLS 1.3 on port `5061`.
 * **Automation:** Automatic SSL generation (Let's Encrypt).
 
