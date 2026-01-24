@@ -5,14 +5,14 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7.2
+# VoIP Server Installer v4.7.3
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Safe Mode - no flush ruleset) + Fail2Ban
-# Changes v4.7.2: Fix exit code masking in ensure_nftables_strict
+# Changes v4.7.3: Enforce 100MB log limit for Systemd Journal & Docker
 # ============================================================ 
 
-VERSION="4.7.2"
+VERSION="4.7.3"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'
@@ -96,6 +96,62 @@ restart_service(){
   fi
 }
 
+ensure_system_logging(){
+  log_i "Configuring system & docker log limits (max 100MB)..."
+
+  # 1. Systemd Journal
+  if [[ -f /etc/systemd/journald.conf ]]; then
+    # Create backup
+    cp /etc/systemd/journald.conf /etc/systemd/journald.conf.bak 2>/dev/null || true
+    # Ensure SystemMaxUse is set
+    if grep -q "^SystemMaxUse=" /etc/systemd/journald.conf; then
+      sed -i 's/^SystemMaxUse=.*/SystemMaxUse=100M/' /etc/systemd/journald.conf
+    else
+      # If commented out or missing
+      if grep -q "^#SystemMaxUse=" /etc/systemd/journald.conf; then
+        sed -i 's/^#SystemMaxUse=.*/SystemMaxUse=100M/' /etc/systemd/journald.conf
+      else
+        echo "SystemMaxUse=100M" >> /etc/systemd/journald.conf
+      fi
+    fi
+    restart_service systemd-journald
+  fi
+
+  # 2. Docker Daemon
+  # We want defaults: max-size=20m, max-file=5 (Total 100MB)
+  local daemon_json="/etc/docker/daemon.json"
+  if [[ ! -f "$daemon_json" ]]; then
+    safe_write "$daemon_json" 0644 root root <<EOF
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "20m",
+    "max-file": "5"
+  }
+}
+EOF
+    restart_service docker
+  else
+    # Simple check if already configured to avoid restart loops or complex parsing without jq
+    if ! grep -q "max-size" "$daemon_json"; then
+      log_w "$daemon_json exists but might lack log-opts. Overwriting for safety (backup saved)."
+      cp "$daemon_json" "${daemon_json}.bak"
+      safe_write "$daemon_json" 0644 root root <<EOF
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "20m",
+    "max-file": "5"
+  }
+}
+EOF
+      restart_service docker
+    else
+      log_ok "Docker daemon.json already has log settings."
+    fi
+  fi
+}
+
 usage(){
   cat <<USAGE
 VoIP Server Installer v${VERSION}
@@ -104,7 +160,7 @@ Usage:
 
 Options:
   --domain DOMAIN       Domain name for the server
-  --email EMAIL         Email for Let's Encrypt
+  --email EMAIL         Email for Let\'s Encrypt
   --ext-ip IP           Manually specify external IP
   --cert-path PATH      Path to existing fullchain.pem/privkey.pem (skips certbot)
   --asterisk-uidgid U:G Manually specify Asterisk UID:GID (e.g. 1000:1000)
@@ -176,7 +232,9 @@ detect_ext_ip(){
   die "Could not detect external IPv4. Use --ext-ip."
 }
 
-rand_b64(){ openssl rand -base64 "$1" | tr -d '\n'; }
+rand_b64(){
+  openssl rand -base64 "$1" | tr -d '\n'
+}
 
 ensure_dirs(){
   install -d -m 0755 "$PROJECT_DIR" "$CFG_DIR" "$CERTS_DIR" "$DATA_DIR" "$LOGS_DIR" "$RUN_DIR"
@@ -514,7 +572,7 @@ table inet voip_firewall {
     }
 }
 EOF
-nft -f "$NFT_MAIN"
+ft -f "$NFT_MAIN"
 log_ok "nftables (Safe Mode) configured."
 }
 
@@ -624,6 +682,7 @@ log_i "Using compose command: $COMPOSE_CMD"
 [[ -n "$DOMAIN" ]] || die "Missing --domain"
 require_root
 
+ensure_system_logging
 ensure_dirs
 EXT_IP="$(detect_ext_ip)"
 
