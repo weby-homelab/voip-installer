@@ -572,7 +572,7 @@ table inet voip_firewall {
     }
 }
 EOF
-ft -f "$NFT_MAIN"
+nft -f "$NFT_MAIN"
 log_ok "nftables (Safe Mode) configured."
 }
 
