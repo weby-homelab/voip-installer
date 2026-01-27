@@ -162,6 +162,29 @@ Configure your softphone with these settings:
 
 ---
 
+## 📂 Server Directory Structure
+
+After installation, the server is organized as follows at `/root/voip-server/`:
+
+```text
+/root/voip-server/
+├── config/
+│   └── asterisk/
+│       ├── pjsip.conf          # SIP settings (ports, transports)
+│       ├── extensions.conf     # Dialplan logic
+│       ├── modules.conf        # Loaded modules
+│       ├── logger.conf         # Log settings
+│       └── rtp.conf            # RTP ports
+├── certs/                      # SSL Certificates (Let's Encrypt)
+├── data/                       # Asterisk database & storage
+├── logs/                       # Log files (security, CDRs)
+├── qr_codes/                   # Client config QR codes
+├── users.env                   # SIP Users & Passwords
+└── docker-compose.yml          # Docker service definition
+```
+
+---
+
 ## 🏗 Architecture & Design Choices
 
 The project leverages **`andrius/asterisk:22`** (based on Alpine Linux) instead of heavyweight FreePBX distributions. This is a deliberate choice prioritizing **security** and **performance**.

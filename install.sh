@@ -30,7 +30,7 @@ on_err(){
 trap on_err ERR
 
 # ---------- paths ----------
-# SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+# SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)" # Unused
 PROJECT_DIR="/root/voip-server"
 CFG_DIR="$PROJECT_DIR/config"
 CERTS_DIR="$PROJECT_DIR/certs"
@@ -52,7 +52,7 @@ F2B_FILTER="/etc/fail2ban/filter.d/asterisk-pjsip-security.conf"
 # ---------- defaults ----------
 YES=0
 UPDATE=0
-# SMOKE_TEST=1
+# SMOKE_TEST=1 # Unused
 
 DOMAIN=""
 EMAIL=""
