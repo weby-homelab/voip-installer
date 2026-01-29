@@ -27,10 +27,11 @@ fi
 
 # Detect Ubuntu 24.04+
 if [[ -f /etc/os-release ]]; then
+    # shellcheck disable=SC1091
     . /etc/os-release
     if [[ "$ID" != "ubuntu" ]] || [[ "${VERSION_ID%%.*}" -lt 24 ]]; then
         warn "This script is optimized for Ubuntu 24.04+. Detected: $PRETTY_NAME"
-        read -p "Continue anyway? (y/N) " -n 1 -r
+        read -rp "Continue anyway? (y/N) " -n 1
         echo
         [[ ! $REPLY =~ ^[Yy]$ ]] && exit 1
     fi
@@ -40,7 +41,7 @@ fi
 
 # Input Port
 if [[ -z "$NEW_PORT" ]]; then
-    read -p "Enter new SSH port (1024-65535): " NEW_PORT
+    read -rp "Enter new SSH port (1024-65535): " NEW_PORT
 fi
 
 if ! [[ "$NEW_PORT" =~ ^[0-9]+$ ]] || [ "$NEW_PORT" -le 1024 ] || [ "$NEW_PORT" -gt 65535 ]; then
@@ -127,7 +128,7 @@ echo -e "Open a NEW terminal window and verify you can connect:"
 echo -e "    ssh -p $NEW_PORT root@<your-server-ip>"
 echo -e "${c_ylw}======================================================${c_reset}\n"
 
-read -p "Did the connection work? If yes, type 'yes' to close port $OLD_PORT: " confirmation
+read -rp "Did the connection work? If yes, type 'yes' to close port $OLD_PORT: " confirmation
 if [[ "$confirmation" != "yes" ]]; then
     warn "Aborting. Both ports are still open."
     warn "To revert manually: rm /etc/systemd/system/ssh.socket.d/listen.conf && systemctl daemon-reload && systemctl restart ssh.socket"
