@@ -30,7 +30,6 @@ on_err(){
 trap on_err ERR
 
 # ---------- paths ----------
-# SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)" # Unused
 PROJECT_DIR="/root/voip-server"
 CFG_DIR="$PROJECT_DIR/config"
 CERTS_DIR="$PROJECT_DIR/certs"
@@ -50,9 +49,7 @@ F2B_JAIL_LOCAL="/etc/fail2ban/jail.local"
 F2B_FILTER="/etc/fail2ban/filter.d/asterisk-pjsip-security.conf"
 
 # ---------- defaults ----------
-YES=0
 UPDATE=0
-# SMOKE_TEST=1 # Unused
 
 DOMAIN=""
 EMAIL=""
@@ -683,7 +680,7 @@ generate_qr_codes(){
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --yes) YES=1; shift ;; 
+    --yes) shift ;; # Kept for compatibility 
     --update) UPDATE=1; shift ;; 
     --domain) DOMAIN="${2:-}"; shift 2 ;; 
     --email) EMAIL="${2:-}"; shift 2 ;; 
@@ -695,9 +692,6 @@ while [[ $# -gt 0 ]]; do
     *) die "Unknown arg: $1" ;; 
   esac
 done
-
-# "Use" variable to satisfy ShellCheck (SC2034)
-: "$YES"
 
 # Start by installing everything needed
 require_root
