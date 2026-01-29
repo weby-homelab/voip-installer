@@ -8,12 +8,13 @@
 
 # 📞 Asterisk Deployment Guide
 
-**Version:** `v4.7.4` (Auto-Dependency Install + Safe Docker Mode)
+**Version:** `v4.7.5` (Strict Firewall + Auto-Dependency Install)
 
 This guide describes the installation process for a secure VoIP server (**Asterisk 22** + **PJSIP** + **TLS/SRTP** + **Fail2Ban** + **NFTables**) on a clean **Ubuntu 24.04** server.
 
 ### 🌟 Features
 
+* **Strict Firewall:** Uses `DROP` policy by default. Automatically detects SSH port to prevent lockout.
 * **Auto-Install:** Automatically installs Docker, Docker Compose, Certbot, Fail2Ban, and NFTables.
 * **Safe Mode:** Does **NOT** reset Docker network settings (no flush ruleset).
 * **Log Rotation:** Enforces 100MB limit for Systemd Journal & Docker logs.
@@ -47,7 +48,7 @@ nano install.sh
 ```
 
 
-2. **Copy** the FULL code of script `v4.7.4` (`install.sh`) to your clipboard.
+2. **Copy** the FULL code of script `v4.7.5` (`install.sh`) to your clipboard.
 3. **Paste** the code into the terminal:
 * **Windows** (PuTTY/PowerShell): Right-click.
 * **Mac/Linux:** `Cmd+V` or `Ctrl+Shift+V`.

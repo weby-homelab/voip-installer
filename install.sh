@@ -5,14 +5,14 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7.4
+# VoIP Server Installer v4.7.5
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
-# Firewall: nftables (Safe Mode - no flush ruleset) + Fail2Ban
-# Changes v4.7.4: Full dependency auto-install (Docker, Certbot, etc.)
+# Firewall: nftables (Strict Mode: DROP policy + Auto-SSH) + Fail2Ban
+# Changes v4.7.5: Strict firewall by default (whitelist only)
 # ============================================================ 
 
-VERSION="4.7.4"
+VERSION="4.7.5"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'

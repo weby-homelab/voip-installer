@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v4.7.5] - 2026-01-29
+
+### Security
+- **Strict Firewall:** Changed default NFTables policy to `DROP`.
+- **Anti-Lockout:** Added dynamic SSH port detection (via `ss`) to allow the active SSH port automatically, preventing accidental lockout if running on a non-standard port.
+- **Port Whitelist:** Reduced allowed ports to only essential services: SSH (Auto+22), HTTP/S (80/443), SIP-TLS (5061), RTP (10000-20000), Loopback, and Tailscale. Removed unused ports (3001, 53, 853) from the default ruleset.
+
 ## [v4.7.4] - 2026-01-29
 
 ### Added
