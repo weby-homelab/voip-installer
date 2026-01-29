@@ -85,13 +85,25 @@ install_dependencies(){
     nftables fail2ban 
     certbot 
     qrencode
-    docker.io docker-compose-v2
   )
+  
+  # Check if docker is already installed to avoid conflicts (e.g. in CI/CD)
+  if ! have docker; then
+    pkgs+=(docker.io)
+  else
+    log_ok "Docker is already installed, skipping."
+  fi
+
+  if ! docker compose version >/dev/null 2>&1; then
+    pkgs+=(docker-compose-v2)
+  else
+    log_ok "Docker Compose V2 is already installed, skipping."
+  fi
   
   # Install packages ensuring no prompts
   apt-get install -y --no-install-recommends "${pkgs[@]}"
   
-  # Enable docker if just installed
+  # Enable docker if it was just installed or present
   if have systemctl; then
     systemctl enable --now docker || true
   fi
