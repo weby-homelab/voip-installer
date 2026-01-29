@@ -559,6 +559,16 @@ fix_permissions(){
 ensure_nftables_strict(){
   need_cmd nft
   
+  # Detect SSH port to avoid lockout
+  local ssh_port
+  if have ss; then
+    ssh_port="$(ss -tlnp | grep -E 'sshd|ssh' | awk '{print $4}' | awk -F: '{print $NF}' | sort -n | head -n1)"
+  fi
+  # Fallback if detection fails or empty
+  [[ -z "$ssh_port" || ! "$ssh_port" =~ ^[0-9]+$ ]] && ssh_port=22
+  
+  log_i "Detected active SSH port: $ssh_port"
+
   # Backup existing table if it exists
   if nft list table inet voip_firewall >/dev/null 2>&1; then
     local bfile
@@ -570,13 +580,12 @@ ensure_nftables_strict(){
   
   safe_write "$NFT_MAIN" 0644 root root <<EOF
 #!/usr/sbin/nft -f
-# WARNING: Do NOT add 'flush ruleset' here. It breaks Docker.
 
 table inet voip_firewall {
     chain input {
-        type filter hook input priority filter;
+        type filter hook input priority filter; policy drop;
         
-        # 1. Allow established
+        # 1. Allow established/related
         ct state { established, related } accept
 
         # 2. Allow Loopback
@@ -584,27 +593,23 @@ table inet voip_firewall {
         ip protocol icmp accept
         ip6 nexthdr ipv6-icmp accept
         
-        # 3. Allow Tailscale (if present)
+        # 3. Allow Tailscale (optional, keep if interface exists)
         iifname "tailscale0" accept
 
-        # 4. Critical Services (SSH)
-        tcp dport 54322 accept
+        # 4. Critical: SSH (Detected port + Standard 22 to be safe)
+        tcp dport { 22, ${ssh_port} } accept
 
-        # 5. VoIP Services
+        # 5. VoIP Services (SIP TLS + RTP)
         tcp dport ${PORT_SIP_TLS} accept
         udp dport ${RTP_MIN}-${RTP_MAX} accept
         
-        # 6. Web/Monitoring
-        tcp dport { 80, 443, 3001 } accept
-        
-        # 7. DNS
-        udp dport { 53, 853 } accept
-        tcp dport { 53, 853 } accept
+        # 6. Web (Certbot/monitor)
+        tcp dport { 80, 443 } accept
     }
 }
 EOF
 nft -f "$NFT_MAIN"
-log_ok "nftables (Safe Mode) configured."
+log_ok "nftables configured (Strict Mode: SSH=$ssh_port)."
 }
 
 ensure_fail2ban(){
