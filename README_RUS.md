@@ -1,5 +1,10 @@
 # 🛡️ VoIP Server Installer
 
+[![Version](https://img.shields.io/github/v/release/weby-homelab/voip-installer?style=flat-square)](https://github.com/weby-homelab/voip-installer/releases)
+[![ShellCheck](https://img.shields.io/github/actions/workflow/status/weby-homelab/voip-installer/lint.yml?label=ShellCheck&style=flat-square)](https://github.com/weby-homelab/voip-installer/actions/workflows/lint.yml)
+[![Test Deploy](https://img.shields.io/github/actions/workflow/status/weby-homelab/voip-installer/test-install.yml?label=Test%20Deploy&style=flat-square)](https://github.com/weby-homelab/voip-installer/actions/workflows/test-install.yml)
+[![License](https://img.shields.io/github/license/weby-homelab/voip-installer?style=flat-square)](LICENSE)
+
 **Безопасное и автоматизированное развертывание Asterisk на Ubuntu 24.04**
 
 > Готовый установщик защищенного VoIP-сервера: **Asterisk 22** (Docker) + **PJSIP** + шифрование **TLS/SRTP** + **Let's Encrypt** SSL + **Fail2Ban** и **NFTables**. Создан для приватности и простоты использования.
