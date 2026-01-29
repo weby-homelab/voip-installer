@@ -613,6 +613,13 @@ log_ok "nftables configured (Strict Mode: SSH=$ssh_port)."
 }
 
 ensure_fail2ban(){
+  # Detect SSH port (standard logic)
+  local ssh_port
+  if have ss; then
+    ssh_port="$(ss -tlnp | grep -E 'sshd|ssh' | awk '{print $4}' | awk -F: '{print $NF}' | sort -n | head -n1 || true)"
+  fi
+  [[ -z "$ssh_port" || ! "$ssh_port" =~ ^[0-9]+$ ]] && ssh_port=22
+
   # Installation handled globally in install_dependencies
   safe_write "$F2B_FILTER" 0644 root root <<'EOF'
 [Definition]
@@ -641,7 +648,7 @@ action   = iptables-allports[name=asterisk-pjsip]
 [sshd]
 enabled = true
 mode    = aggressive
-port    = 54322
+port    = ${ssh_port}
 filter  = sshd
 logpath = /var/log/auth.log
 maxretry = 3
@@ -656,7 +663,7 @@ action   = iptables-allports
 EOF
 
   restart_service fail2ban
-  log_ok "fail2ban configured."
+  log_ok "fail2ban configured (SSH Port: ${ssh_port})."
 }
 
 ensure_logrotate(){
