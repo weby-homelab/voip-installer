@@ -5,14 +5,14 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7.3
+# VoIP Server Installer v4.7.4
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Safe Mode - no flush ruleset) + Fail2Ban
-# Changes v4.7.3: Enforce 100MB log limit for Systemd Journal & Docker
+# Changes v4.7.4: Full dependency auto-install (Docker, Certbot, etc.)
 # ============================================================ 
 
-VERSION="4.7.3"
+VERSION="4.7.4"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'
@@ -74,6 +74,28 @@ TLS_METHODS="tlsv1_2 tlsv1_3"
 # ---------- helpers ----------
 have(){ command -v "$1" >/dev/null 2>&1; }
 need_cmd(){ have "$1" || die "Command not found: $1"; }
+
+install_dependencies(){
+  log_i "Updating system and installing required dependencies..."
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  
+  local pkgs=(
+    curl wget openssl iproute2 
+    nftables fail2ban 
+    certbot 
+    qrencode
+    docker.io docker-compose-v2
+  )
+  
+  # Install packages ensuring no prompts
+  apt-get install -y --no-install-recommends "${pkgs[@]}"
+  
+  # Enable docker if just installed
+  if have systemctl; then
+    systemctl enable --now docker || true
+  fi
+}
 
 detect_compose_cmd(){
   if docker compose version >/dev/null 2>&1; then
@@ -577,11 +599,7 @@ log_ok "nftables (Safe Mode) configured."
 }
 
 ensure_fail2ban(){
-  if ! have fail2ban-client; then
-    log_i "Installing fail2ban..."
-    apt_install fail2ban
-  fi
-
+  # Installation handled globally in install_dependencies
   safe_write "$F2B_FILTER" 0644 root root <<'EOF'
 [Definition]
 failregex = SecurityEvent="(?:InvalidAccountID|ChallengeResponseFailed)".*RemoteAddress="IPV[46]/(?:TLS|TCP|UDP)/<HOST>/\d+" 
@@ -669,7 +687,11 @@ done
 # "Use" variable to satisfy ShellCheck (SC2034)
 : "$YES"
 
-# Early dependency check (High Priority)
+# Start by installing everything needed
+require_root
+install_dependencies
+
+# Early validation - these should now be present
 need_cmd ss
 need_cmd openssl
 need_cmd nft
@@ -680,7 +702,6 @@ COMPOSE_CMD="$(detect_compose_cmd)"
 log_i "Using compose command: $COMPOSE_CMD"
 
 [[ -n "$DOMAIN" ]] || die "Missing --domain"
-require_root
 
 ensure_system_logging
 ensure_dirs
