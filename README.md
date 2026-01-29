@@ -90,7 +90,7 @@ chmod +x install.sh
 
 The script will automatically perform the following actions without your intervention:
 
-1. 🐳 Install **Docker**, **Fail2Ban**, **NFTables**.
+1. 🐳 Install **Docker**, **Docker Compose**, **Certbot**, **Fail2Ban**, and **NFTables**.
 2. 🔒 Obtain an **SSL certificate** via Certbot.
 3. 👤 Generate passwords for users **100-105**.
 4. 🛡️ Configure firewall (`table inet voip_firewall`) **without breaking Docker**.
