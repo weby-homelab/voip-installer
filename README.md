@@ -42,7 +42,7 @@ ssh root@your-server-ip
 
 1. Create an empty file for the script:
 ```bash
-nano install_voip.sh
+nano install.sh
 
 ```
 
@@ -65,14 +65,14 @@ nano install_voip.sh
 
 1. Make the script executable:
 ```bash
-chmod +x install_voip.sh
+chmod +x install.sh
 
 ```
 
 
 2. **Run the script** (replace the placeholders with your actual data):
 ```bash
-./install_voip.sh --domain your-domain.com --email admin@your-domain.com
+./install.sh --domain your-domain.com --email admin@your-domain.com
 
 ```
 
