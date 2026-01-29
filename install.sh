@@ -562,7 +562,7 @@ ensure_nftables_strict(){
   # Detect SSH port to avoid lockout
   local ssh_port
   if have ss; then
-    ssh_port="$(ss -tlnp | grep -E 'sshd|ssh' | awk '{print $4}' | awk -F: '{print $NF}' | sort -n | head -n1)"
+    ssh_port="$(ss -tlnp | grep -E 'sshd|ssh' | awk '{print $4}' | awk -F: '{print $NF}' | sort -n | head -n1 || true)"
   fi
   # Fallback if detection fails or empty
   [[ -z "$ssh_port" || ! "$ssh_port" =~ ^[0-9]+$ ]] && ssh_port=22
