@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v4.7.6] - 2026-01-30
+
+### Fixed
+- **Critical TLS:** Fixed PJSIP TLS transport failure by mounting the host's `/etc/ssl/certs/ca-certificates.crt` into the Asterisk container.
+- **Permissions:** Updated certificate file permissions ownership to use the specific User ID (`$uid:$gid`) instead of `root:$gid`, ensuring the Asterisk process can read private keys.
+
+### Added
+- **Tools:** Added `tools/README.md` documentation.
+
+### Changed
+- **Tooling:** Moved and improved `release.sh` to `tools/release.sh` with better project root detection.
+
 ## [v4.7.5] - 2026-01-29
 
 ### Security
