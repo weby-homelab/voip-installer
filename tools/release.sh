@@ -32,8 +32,15 @@ fi
 if [ "$NEW_VER" != "$CURRENT_VER" ]; then
   echo -e "🚀 Updating version from ${GREEN}v${CURRENT_VER}${NC} to ${GREEN}v${NEW_VER}${NC}..."
   
-  # 1. Update install.sh ONLY if version changed
-  perl -pi -e "s/VERSION=\"${CURRENT_VER}\"/VERSION=\"${NEW_VER}\"/g" install.sh
+  # 1. Update VERSION variable in install.sh
+  perl -pi -e "s/VERSION=\" ${CURRENT_VER}\"/VERSION=\" ${NEW_VER}\"/g" install.sh
+  
+  # 2. Update Header comment in install.sh (VoIP Server Installer vX.Y.Z)
+  perl -pi -e "s/# VoIP Server Installer v${CURRENT_VER}/# VoIP Server Installer v${NEW_VER}/g" install.sh
+  
+  # 3. Update Header Changes line (Changes vX.Y.Z:)
+  perl -pi -e "s/# Changes v${CURRENT_VER}:/# Changes v${NEW_VER}:/g" install.sh
+
   echo "✅ Updated install.sh"
 else
   echo -e "ℹ️  Version unchanged. Skipping install.sh update."
@@ -41,9 +48,10 @@ fi
 
 # 2. Update README files
 # Update the main Version header (English, Russian, Ukrainian)
-perl -pi -e "s/Version:\*\* \`v${CURRENT_VER}\` /Version:\*\* \`v${NEW_VER}\`/g" README.md
-perl -pi -e "s/Версия:\*\* \`v${CURRENT_VER}\` /Версия:\*\* \`v${NEW_VER}\`/g" README_RUS.md
-perl -pi -e "s/Версія:\*\* \`v${CURRENT_VER}\` /Версія:\*\* \`v${NEW_VER}\`/g" README_UKR.md
+# Using perl with single quotes for the script but variables for expansion
+perl -pi -e "s/Version:\*\* \`v${CURRENT_VER}\`/Version:\*\* \`v${NEW_VER}\`/g" README.md
+perl -pi -e "s/Версия:\*\* \`v${CURRENT_VER}\`/Версия:\*\* \`v${NEW_VER}\`/g" README_RUS.md
+perl -pi -e "s/Версія:\*\* \`v${CURRENT_VER}\`/Версія:\*\* \`v${NEW_VER}\`/g" README_UKR.md
 
 # Update references in text (e.g. "script v4.7.6")
 # Note: We made "Step 2" generic, so this mainly affects the intro or other specific refs.
