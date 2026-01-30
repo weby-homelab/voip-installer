@@ -4,23 +4,16 @@ set -e
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 # Resolve Project Root (Parent of 'tools' directory)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Navigate to Project Root to ensure paths are correct
 cd "$PROJECT_ROOT" || { echo "Error: Could not find project root"; exit 1; }
 
-if [ -z "$1" ]; then
-  echo -e "${BLUE}VoIP Installer Release Manager${NC}"
-  echo "Usage: ./tools/release.sh <new_version>"
-  echo "Example: ./tools/release.sh 4.7.7"
-  exit 1
-fi
-
-NEW_VER="$1"
+# Get current version from source of truth (install.sh)
 CURRENT_VER=$(grep 'VERSION="' install.sh | cut -d'"' -f2 | tr -d '\r\n')
 
 if [ -z "$CURRENT_VER" ]; then
@@ -28,31 +21,43 @@ if [ -z "$CURRENT_VER" ]; then
   exit 1
 fi
 
-echo -e "🚀 Updating version from ${GREEN}v${CURRENT_VER}${NC} to ${GREEN}v${NEW_VER}${NC}..."
+# Determine New Version
+if [ -z "$1" ]; then
+  NEW_VER="$CURRENT_VER"
+  echo -e "${YELLOW}No new version specified. Syncing docs with current version: v${CURRENT_VER}${NC}"
+else
+  NEW_VER="$1"
+fi
 
-# 1. Update install.sh
-perl -pi -e "s/VERSION=\"${CURRENT_VER}\"/VERSION=\"${NEW_VER}\"/g" install.sh
-echo "✅ Updated install.sh"
+if [ "$NEW_VER" != "$CURRENT_VER" ]; then
+  echo -e "🚀 Updating version from ${GREEN}v${CURRENT_VER}${NC} to ${GREEN}v${NEW_VER}${NC}..."
+  
+  # 1. Update install.sh ONLY if version changed
+  perl -pi -e "s/VERSION=\"${CURRENT_VER}\"/VERSION=\"${NEW_VER}\"/g" install.sh
+  echo "✅ Updated install.sh"
+else
+  echo -e "ℹ️  Version unchanged. Skipping install.sh update."
+fi
 
 # 2. Update README files
-perl -pi -e "s/Version:\*\* \
-vim${CURRENT_VER}\"/Version:\*\* \
-vim${NEW_VER}\"/g" README.md
-perl -pi -e "s/Версия:\*\* \
-vim${CURRENT_VER}\"/Версия:\*\* \
-vim${NEW_VER}\"/g" README_RUS.md
-perl -pi -e "s/Версія:\*\* \
-vim${CURRENT_VER}\"/Версія:\*\* \
-vim${NEW_VER}\"/g" README_UKR.md
+# Update the main Version header (English, Russian, Ukrainian)
+perl -pi -e "s/Version:\*\* \`v${CURRENT_VER}\` /Version:\*\* \`v${NEW_VER}\`/g" README.md
+perl -pi -e "s/Версия:\*\* \`v${CURRENT_VER}\` /Версия:\*\* \`v${NEW_VER}\`/g" README_RUS.md
+perl -pi -e "s/Версія:\*\* \`v${CURRENT_VER}\` /Версія:\*\* \`v${NEW_VER}\`/g" README_UKR.md
 
-# Update text references "script v4.7.6"
+# Update references in text (e.g. "script v4.7.6")
+# Note: We made "Step 2" generic, so this mainly affects the intro or other specific refs.
 perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README.md
 perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README_RUS.md
 perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README_UKR.md
 
-echo "✅ Updated README.md"
-echo "✅ Updated README_RUS.md"
-echo "✅ Updated README_UKR.md"
+echo "✅ Synced README.md"
+echo "✅ Synced README_RUS.md"
+echo "✅ Synced README_UKR.md"
 
-echo -e "\n🎉 Done! Ready to commit:"
-echo -e "${BLUE}git add . && git commit -m \"feat: release v${NEW_VER}\" && git tag v${NEW_VER} && git push && git push --tags${NC}"
+if [ "$NEW_VER" != "$CURRENT_VER" ]; then
+  echo -e "\n🎉 Done! Ready to commit:"
+  echo -e "${BLUE}git add . && git commit -m \"feat: release v${NEW_VER}\" && git tag v${NEW_VER} && git push && git push --tags${NC}"
+else
+  echo -e "\n✅ Docs synced to v${CURRENT_VER}."
+fi

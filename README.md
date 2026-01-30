@@ -13,7 +13,7 @@
 
 # 📞 Asterisk Deployment Guide
 
-**Version:** `v4.7.7` (Fix TLS transport: mount CA certs, correct permissions)
+**Version:** `v4.7.7`(Fix TLS transport: mount CA certs, correct permissions)
 
 This guide describes the installation process for a secure VoIP server (**Asterisk 22** + **PJSIP** + **TLS/SRTP** + **Fail2Ban** + **NFTables**) on a clean **Ubuntu 24.04** server.
 
@@ -53,7 +53,7 @@ nano install.sh
 ```
 
 
-2. **Copy** the FULL code of script `v4.7.5` (`install.sh`) to your clipboard.
+2. **Copy** the FULL code of the script (`install.sh`) to your clipboard.
 3. **Paste** the code into the terminal:
 * **Windows** (PuTTY/PowerShell): Right-click.
 * **Mac/Linux:** `Cmd+V` or `Ctrl+Shift+V`.
