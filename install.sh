@@ -12,7 +12,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 # Changes v4.7.6: Fix TLS transport (mount CA certs, exact permissions, pjsip methods)
 # ============================================================ 
 
-VERSION="4.7.6"
+VERSION="4.7.7"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'

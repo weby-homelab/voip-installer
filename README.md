@@ -13,7 +13,7 @@
 
 # 📞 Asterisk Deployment Guide
 
-**Version:** `v4.7.6` (Fix TLS transport: mount CA certs, correct permissions)
+**Version:** `v4.7.7` (Fix TLS transport: mount CA certs, correct permissions)
 
 This guide describes the installation process for a secure VoIP server (**Asterisk 22** + **PJSIP** + **TLS/SRTP** + **Fail2Ban** + **NFTables**) on a clean **Ubuntu 24.04** server.
 
