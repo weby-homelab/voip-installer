@@ -97,6 +97,9 @@ echo -e "${c_ylw}======================================================${c_reset
 read -rp "Did the connection work? Type 'yes' to close port $OLD_PORT and finalize: " confirmation
 if [[ "$confirmation" != "yes" ]]; then
     warn "Aborting. Both ports are still open."
+    warn "Possible causes for failure:"
+    warn "  1. Cloud Firewall / Security Group (Hetzner, AWS, etc) blocking port $NEW_PORT."
+    warn "  2. Network connection issues."
     warn "To revert manually: rm /etc/systemd/system/ssh.socket.d/listen.conf && systemctl daemon-reload && systemctl restart ssh.socket"
     exit 0
 fi
