@@ -5,14 +5,14 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7.7
+# VoIP Server Installer v4.7.8
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Strict Mode: DROP policy + Auto-SSH) + Fail2Ban
-# Changes v4.7.7: Fix TLS transport (mount CA certs, exact permissions, pjsip methods)
+# Changes v4.7.8: Fix TLS transport (mount CA certs, exact permissions, pjsip methods)
 # ============================================================ 
 
-VERSION="4.7.7"
+VERSION="4.7.8"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'
@@ -66,7 +66,7 @@ RTP_MAX=19999
 F2B_MAXRETRY=2
 F2B_FINDTIME="600m"
 F2B_BANTIME="120h"
-TLS_METHODS="tlsv1_2 tlsv1_3"
+TLS_METHODS="tlsv1_3"
 
 # ---------- helpers ----------
 have(){ command -v "$1" >/dev/null 2>&1; }
