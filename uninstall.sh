@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -Eeuo pipefail
 
 # Colors
@@ -10,6 +10,7 @@ log_e(){ echo -e "${c_red}[ERR]${c_reset} $*" >&2; }
 
 PROJECT_DIR="/root/voip-server"
 NFT_TABLE="voip_firewall"
+LE_HOOK="/etc/letsencrypt/renewal-hooks/deploy/voip-renew.sh"
 
 if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
   log_e "Please run as root."
@@ -68,7 +69,11 @@ else
   log_i "Data directory KEPT at $PROJECT_DIR"
 fi
 
-# 5. Remove Logrotate
+# 5. Remove Logrotate and Certbot Hook
 rm -f /etc/logrotate.d/asterisk-cdr
+if [[ -f "$LE_HOOK" ]]; then
+  rm -f "$LE_HOOK"
+  log_ok "Removed Certbot renewal hook."
+fi
 
 log_ok "Uninstallation complete."
