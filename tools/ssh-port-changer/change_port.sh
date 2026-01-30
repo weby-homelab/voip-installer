@@ -144,7 +144,7 @@ case "$FW_TYPE" in
     ufw)
         ufw delete allow "$OLD_PORT/tcp" || warn "Could not delete UFW rule for $OLD_PORT"
         log "UFW rule removed."
-        ;;;;
+        ;;
     nftables)
         # Attempt to clean up persistent config
         CONF="/etc/nftables.conf"
@@ -161,7 +161,7 @@ case "$FW_TYPE" in
             # Apply changes
             nft -f "$CONF" && log "NFTables config updated and reloaded." || warn "Failed to reload NFTables. Check $CONF manually."
         fi
-        ;;;
+        ;;
 esac
 
 log "Done! SSH is now running ONLY on port $NEW_PORT."
