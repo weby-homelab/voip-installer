@@ -13,7 +13,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_ROOT" || { echo "Error: Could not find project root"; exit 1; }
 
-# Get current version from source of truth (install.sh)
+# Get current version from source of truth (the VERSION="" line)
 CURRENT_VER=$(grep 'VERSION="' install.sh | cut -d'"' -f2 | tr -d '\r\n')
 
 if [ -z "$CURRENT_VER" ]; then
@@ -24,48 +24,38 @@ fi
 # Determine New Version
 if [ -z "$1" ]; then
   NEW_VER="$CURRENT_VER"
-  echo -e "${YELLOW}No new version specified. Syncing docs with current version: v${CURRENT_VER}${NC}"
+  echo -e "${YELLOW}No new version specified. Syncing headers/docs with current version: v${CURRENT_VER}${NC}"
 else
   NEW_VER="$1"
 fi
 
-if [ "$NEW_VER" != "$CURRENT_VER" ]; then
-  echo -e "🚀 Updating version from ${GREEN}v${CURRENT_VER}${NC} to ${GREEN}v${NEW_VER}${NC}..."
-  
-  # 1. Update VERSION variable in install.sh
-  perl -pi -e "s/VERSION=\" ${CURRENT_VER}\"/VERSION=\" ${NEW_VER}\"/g" install.sh
-  
-  # 2. Update Header comment in install.sh (VoIP Server Installer vX.Y.Z)
-  perl -pi -e "s/# VoIP Server Installer v${CURRENT_VER}/# VoIP Server Installer v${NEW_VER}/g" install.sh
-  
-  # 3. Update Header Changes line (Changes vX.Y.Z:)
-  perl -pi -e "s/# Changes v${CURRENT_VER}:/# Changes v${NEW_VER}:/g" install.sh
+echo -e "🚀 Syncing/Updating version to ${GREEN}v${NEW_VER}${NC}..."
 
-  echo "✅ Updated install.sh"
-else
-  echo -e "ℹ️  Version unchanged. Skipping install.sh update."
+# 1. Update install.sh (Aggressive sync of all version mentions)
+perl -pi -e "s/VERSION=\"[0-9.]*\"/VERSION=\"${NEW_VER}\"/g" install.sh
+perl -pi -e "s/# VoIP Server Installer v[0-9.]*/# VoIP Server Installer v${NEW_VER}/g" install.sh
+perl -pi -e "s/# Changes v[0-9.]*/# Changes v${NEW_VER}/g" install.sh
+echo "✅ Synced install.sh"
+
+# 2. Update README files (Sync Headers)
+perl -pi -e "s/Version:\*\* \`v[0-9.]*\`/Version:\*\* \`v${NEW_VER}\`/g" README.md
+perl -pi -e "s/Версия:\*\* \`v[0-9.]*\`/Версия:\*\* \`v${NEW_VER}\`/g" README_RUS.md
+perl -pi -e "s/Версія:\*\* \`v[0-9.]*\`/Версія:\*\* \`v${NEW_VER}\`/g" README_UKR.md
+
+# 3. Update Text References (v4.7.x)
+# This is tricky because we don't want to replace historical changelogs.
+# We'll only replace the previous version with the new one globally.
+if [ "$NEW_VER" != "$CURRENT_VER" ]; then
+  perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README.md
+  perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README_RUS.md
+  perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README_UKR.md
 fi
 
-# 2. Update README files
-# Update the main Version header (English, Russian, Ukrainian)
-# Using perl with single quotes for the script but variables for expansion
-perl -pi -e "s/Version:\*\* \`v${CURRENT_VER}\`/Version:\*\* \`v${NEW_VER}\`/g" README.md
-perl -pi -e "s/Версия:\*\* \`v${CURRENT_VER}\`/Версия:\*\* \`v${NEW_VER}\`/g" README_RUS.md
-perl -pi -e "s/Версія:\*\* \`v${CURRENT_VER}\`/Версія:\*\* \`v${NEW_VER}\`/g" README_UKR.md
-
-# Update references in text (e.g. "script v4.7.6")
-# Note: We made "Step 2" generic, so this mainly affects the intro or other specific refs.
-perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README.md
-perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README_RUS.md
-perl -pi -e "s/v${CURRENT_VER}/v${NEW_VER}/g" README_UKR.md
-
-echo "✅ Synced README.md"
-echo "✅ Synced README_RUS.md"
-echo "✅ Synced README_UKR.md"
+echo "✅ Synced READMEs"
 
 if [ "$NEW_VER" != "$CURRENT_VER" ]; then
   echo -e "\n🎉 Done! Ready to commit:"
   echo -e "${BLUE}git add . && git commit -m \"feat: release v${NEW_VER}\" && git tag v${NEW_VER} && git push && git push --tags${NC}"
 else
-  echo -e "\n✅ Docs synced to v${CURRENT_VER}."
+  echo -e "\n✅ All files synced to v${NEW_VER}."
 fi

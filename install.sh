@@ -5,11 +5,11 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7.6
+# VoIP Server Installer v4.7.7
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Strict Mode: DROP policy + Auto-SSH) + Fail2Ban
-# Changes v4.7.6: Fix TLS transport (mount CA certs, exact permissions, pjsip methods)
+# Changes v4.7.7: Fix TLS transport (mount CA certs, exact permissions, pjsip methods)
 # ============================================================ 
 
 VERSION="4.7.7"
