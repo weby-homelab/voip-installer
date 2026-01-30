@@ -5,14 +5,14 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7.5
+# VoIP Server Installer v4.7.6
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Strict Mode: DROP policy + Auto-SSH) + Fail2Ban
-# Changes v4.7.5: Strict firewall by default (whitelist only)
+# Changes v4.7.6: Fix TLS transport (mount CA certs, exact permissions, pjsip methods)
 # ============================================================ 
 
-VERSION="4.7.5"
+VERSION="4.7.6"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'
@@ -517,6 +517,7 @@ services:
     volumes:
       - ${ASTERISK_CFG_DIR}:/etc/asterisk:ro
       - ${CERTS_DIR}:/etc/asterisk/certs:ro
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
       - ${LOGS_DIR}/asterisk:/var/log/asterisk
       - ${DATA_DIR}/asterisk:/var/lib/asterisk
       - ${ASTERISK_RUN_DIR}:/var/run/asterisk
@@ -547,11 +548,11 @@ fix_permissions(){
   chmod -R 0775 "$LOGS_DIR/asterisk" "$ASTERISK_RUN_DIR"
   
   if [[ -f "$CERTS_DIR/privkey.pem" ]]; then
-    chown root:"$gid" "$CERTS_DIR/privkey.pem"
-    chmod 0640 "$CERTS_DIR/privkey.pem"
+    chown "$uid":"$gid" "$CERTS_DIR/privkey.pem"
+    chmod 0600 "$CERTS_DIR/privkey.pem"
   fi
   if [[ -f "$CERTS_DIR/fullchain.pem" ]]; then
-    chown root:root "$CERTS_DIR/fullchain.pem"
+    chown "$uid":"$gid" "$CERTS_DIR/fullchain.pem"
     chmod 0644 "$CERTS_DIR/fullchain.pem"
   fi
 }
