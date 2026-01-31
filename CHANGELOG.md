@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v4.7.9] - 2026-01-31
+
+### Security
+- **SSH Hardening:** Automated SSH security configuration (disabling password/keyboard-interactive auth, enforcing key-only root access).
+- **Fail2Ban:** Added default whitelist for Loopback and Tailscale subnets (`127.0.0.1`, `100.64.0.0/10`).
+- **Fail2Ban:** Relaxed PJSIP `maxretry` to 10 to reduce false positives for legitimate users while maintaining long-term bans (120h).
+
+### Added
+- **Docker:** Integrated official Docker CE repository installation for Ubuntu and Debian.
+
 ## [v4.7.7] - 2026-01-30
 
 ### Maintenance
