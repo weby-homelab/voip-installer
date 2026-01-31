@@ -106,8 +106,10 @@ install_dependencies(){
     # 3. Add the repository to Apt sources
     # Detect OS (Ubuntu/Debian) to set correct repo URL
     local os_id
+    # shellcheck disable=SC1091
     os_id=$(. /etc/os-release && echo "$ID")
     local codename
+    # shellcheck disable=SC1091
     codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
 
     if [[ "$os_id" == "ubuntu" || "$os_id" == "debian" ]]; then
