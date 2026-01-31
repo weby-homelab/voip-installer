@@ -5,14 +5,14 @@ umask 077
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # ============================================================ 
-# VoIP Server Installer v4.7.8
+# VoIP Server Installer v4.7.9
 # Stack: Asterisk 22 (Docker, host network)
 # SIP: TLS 5061 (PJSIP Wizard), SRTP SDES, ICE enabled
 # Firewall: nftables (Strict Mode: DROP policy + Auto-SSH) + Fail2Ban
-# Changes v4.7.8: Fix TLS transport (mount CA certs, exact permissions, pjsip methods)
+# Changes v4.7.9: Official Docker CE install, relaxed Fail2Ban limits (maxretry=10)
 # ============================================================ 
 
-VERSION="4.7.8"
+VERSION="4.7.9"
 
 # ---------- logging ----------
 c_reset='\033[0m'; c_red='\033[0;31m'; c_grn='\033[0;32m'; c_ylw='\033[0;33m'; c_blu='\033[0;34m'
@@ -63,8 +63,8 @@ SIP_USERS=({100..105})
 PORT_SIP_TLS=5061
 RTP_MIN=10000
 RTP_MAX=19999
-F2B_MAXRETRY=2
-F2B_FINDTIME="600m"
+F2B_MAXRETRY=10
+F2B_FINDTIME="10m"
 F2B_BANTIME="120h"
 TLS_METHODS="tlsv1_3"
 
@@ -82,24 +82,50 @@ install_dependencies(){
     nftables fail2ban 
     certbot 
     qrencode
+    ca-certificates 
+    gnupg
   )
   
-  # Check if docker is already installed to avoid conflicts (e.g. in CI/CD)
+  # Install basic tools first
+  apt-get install -y --no-install-recommends "${pkgs[@]}"
+
+  # Check if docker is installed
   if ! have docker; then
-    pkgs+=(docker.io)
+    log_i "Installing Docker CE from official repository..."
+    
+    # 1. Remove conflicting packages
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
+      apt-get remove -y $pkg 2>/dev/null || true
+    done
+
+    # 2. Add Docker's official GPG key
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
+    chmod a+r /etc/apt/keyrings/docker.gpg
+
+    # 3. Add the repository to Apt sources
+    # Detect OS (Ubuntu/Debian) to set correct repo URL
+    local os_id
+    os_id=$(. /etc/os-release && echo "$ID")
+    local codename
+    codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+
+    if [[ "$os_id" == "ubuntu" || "$os_id" == "debian" ]]; then
+      echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$os_id \
+        $codename stable" | \
+        tee /etc/apt/sources.list.d/docker.list > /dev/null
+      
+      apt-get update
+      apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    else
+      log_w "OS '$os_id' might not be fully supported by this Docker install logic. Falling back to apt default."
+      apt-get install -y docker.io
+    fi
   else
     log_ok "Docker is already installed, skipping."
   fi
 
-  if ! docker compose version >/dev/null 2>&1; then
-    pkgs+=(docker-compose-v2)
-  else
-    log_ok "Docker Compose V2 is already installed, skipping."
-  fi
-  
-  # Install packages ensuring no prompts
-  apt-get install -y --no-install-recommends "${pkgs[@]}"
-  
   # Enable docker if it was just installed or present
   if have systemctl; then
     systemctl enable --now docker || true
