@@ -66,6 +66,7 @@ RTP_MAX=19999
 F2B_MAXRETRY=10
 F2B_FINDTIME="10m"
 F2B_BANTIME="120h"
+F2B_IGNORE_IPS="127.0.0.1 127.0.0.53 46.224.135.1 46.224.186.236 194.164.198.173 144.21.33.243 176.37.242.89 100.64.0.0/10 176.111.176.0/20 176.111.178.0/20 176.111.179.0/20 176.111.180.2/20 178.133.149.0/20 ::1"
 TLS_METHODS="tlsv1_3"
 
 # ---------- helpers ----------
@@ -658,6 +659,7 @@ EOF
   
   safe_write "$F2B_JAIL_LOCAL" 0644 root root <<EOF
 [DEFAULT]
+ignoreip = ${F2B_IGNORE_IPS}
 bantime = 1h
 findtime = 10m
 maxretry = 5
@@ -693,6 +695,44 @@ EOF
 
   restart_service fail2ban
   log_ok "fail2ban configured (SSH Port: ${ssh_port})."
+}
+
+ensure_ssh_security(){
+  log_i "Hardening SSH configuration..."
+  local ssh_cfg="/etc/ssh/sshd_config"
+  local changed=0
+  
+  # Helper to append or replace
+  set_ssh_opt(){
+    local key="$1"
+    local val="$2"
+    if grep -q "^${key}" "$ssh_cfg"; then
+      if ! grep -q "^${key} ${val}" "$ssh_cfg"; then
+        sed -i "s/^${key}.*/${key} ${val}/" "$ssh_cfg"
+        changed=1
+      fi
+    else
+      echo "${key} ${val}" >> "$ssh_cfg"
+      changed=1
+    fi
+  }
+
+  set_ssh_opt "PasswordAuthentication" "no"
+  set_ssh_opt "KbdInteractiveAuthentication" "no"
+  set_ssh_opt "PermitRootLogin" "prohibit-password"
+  set_ssh_opt "X11Forwarding" "yes"
+  set_ssh_opt "PrintMotd" "no"
+
+  if [[ $changed -eq 1 ]]; then
+    if have systemctl; then
+      systemctl reload ssh || systemctl reload sshd || true
+    else
+      service ssh reload || service sshd reload || true
+    fi
+    log_ok "SSH hardened (PasswordAuth=no, RootLogin=keys-only)"
+  else
+    log_ok "SSH already secured."
+  fi
 }
 
 ensure_logrotate(){
@@ -779,6 +819,7 @@ IFS=$' \n\t'
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d --build
 IFS="$OLD_IFS"
 
+ensure_ssh_security
 ensure_fail2ban
 
 log_ok "VoIP Server v${VERSION} deployed!"
