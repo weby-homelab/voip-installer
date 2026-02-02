@@ -239,6 +239,38 @@ Official distributions like FreePBX are designed for GUI management, requiring A
 
 ---
 
+## 🛠 Advanced Usage
+
+Here are some common scenarios for re-running the installer to apply changes or fix issues.
+
+### 1. Update Configurations (Standard)
+Use this after `git pull` or if you edited the script logic. This will regenerate Asterisk config files without changing passwords or certificates.
+```bash
+./install.sh --domain your-domain.com --update
+```
+
+### 2. Change External IP (NAT Fix)
+If the auto-detection failed or your server's public IP changed.
+```bash
+./install.sh --domain your-domain.com --ext-ip 1.2.3.4 --update
+```
+
+### 3. Force Password Reset
+To generate NEW passwords for all users, delete the existing environment file before running the script.
+**Warning:** You will need to reconfigure all phones!
+```bash
+rm /root/voip-server/users.env
+./install.sh --domain your-domain.com --email admin@example.com --update
+```
+
+### 4. Use Custom Certificates
+If you cannot use Let's Encrypt (e.g., port 80 is blocked), point to your existing certificate files.
+```bash
+./install.sh --domain your-domain.com --cert-path /path/to/your/certs/ --update
+```
+
+---
+
 ## 🔧 Troubleshooting
 
 * **No Audio:** Check UDP range `10000-19999` in your hosting panel firewall (e.g., Hetzner Firewall / AWS Security Group).
