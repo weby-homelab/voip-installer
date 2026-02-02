@@ -408,5 +408,10 @@ docker exec asterisk-voip curl -Is https://google.com | grep HTTP
 cd ~/voip-installer
 git pull
 # Потім перезапустити скрипт, якщо потрібне оновлення конфігурації
+```
 
+Коли необхідно оновлення конфігурацій БЕЗ зміни паролів та без повторної генерації сертифікатів (наприклад, змінити TZ):
+
+```bash
+./install.sh --domain example.com --cert-path /etc/letsencrypt/live/example.com/ --tz Europe/Berlin --update --yes
 ```

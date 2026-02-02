@@ -381,5 +381,10 @@ If you update the code in the repository (e.g., fix bugs or add features), you o
 cd ~/voip-installer
 git pull
 # Then rerun the script if a configuration update is required
+```
 
+When it is necessary to update configurations WITHOUT changing passwords and without regenerating certificates anew (e.g. changing TZ):
+
+```bash
+./install.sh --domain example.com --cert-path /etc/letsencrypt/live/example.com/ --tz Europe/Berlin --update --yes
 ```
