@@ -214,26 +214,27 @@ graph TD
     FW[NFTables Firewall]
     F2B[Fail2Ban]
     
-    subgraph Server [Ubuntu 24.04 Host]
-        FW -->|"Allow TLS 5061"| Docker
-        FW -->|"Allow RTP 10000-20000"| Docker
-        FW -->|"Drop Malicious"| Drop[DROP]
+    subgraph Host [Ubuntu 24.04 Server]
+        FW
+        F2B
         
-        F2B -.->|"Monitors Logs"| Logs
-        F2B -.->|"Updates Ban List"| FW
-        
-        subgraph Docker Container [Asterisk 22]
+        subgraph Docker [Docker Container: Asterisk 22]
             PJSIP[PJSIP Stack]
             RTP[RTP Engine]
             Logs[Asterisk Logs]
         end
-        
-        Docker ---|"Host Network Mode"| FW
     end
     
-    User -->|"TLS Encrypted Signaling"| Net
-    User -->|"SRTP Encrypted Audio"| Net
+    User -->|"Encrypted Signaling (TLS:5061)"| Net
+    User -->|"Encrypted Audio (SRTP)"| Net
     Net --> FW
+    
+    FW -->|"Allow TLS/RTP"| PJSIP
+    FW -->|"Allow RTP Range"| RTP
+    FW -.->|"Host Mode"| Docker
+    
+    F2B -.->|"Monitors"| Logs
+    F2B -.->|"Updates Ban List"| FW
 ```
 
 ### Why not FreePBX?
