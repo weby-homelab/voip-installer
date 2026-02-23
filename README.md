@@ -16,139 +16,140 @@
 [![Test Deploy](https://img.shields.io/github/actions/workflow/status/weby-homelab/voip-installer/test-install.yml?label=Test%20Deploy&style=flat-square)](https://github.com/weby-homelab/voip-installer/actions/workflows/test-install.yml)
 [![License](https://img.shields.io/github/license/weby-homelab/voip-installer?style=flat-square)](LICENSE)
 
-**Secure, Automated Asterisk Deployment for Ubuntu 24.04**
+**Безпечне та автоматизоване розгортання Asterisk на Ubuntu 24.04**
 
-> A production-ready installer for a secure VoIP stack: **Asterisk 22** (Docker) + **PJSIP** + **TLS/SRTP** encryption + **Let's Encrypt** SSL + **Fail2Ban** & **NFTables**. Designed for privacy and ease of use.
-
----
-
-# 📞 Asterisk Deployment Guide
-
-**Version:** `v4.7.9`(Fix TLS transport: mount CA certs, correct permissions)
-
-This guide describes the installation process for a secure VoIP server (**Asterisk 22** + **PJSIP** + **TLS/SRTP** + **Fail2Ban** + **NFTables**) on a clean **Ubuntu 24.04** server.
-
-### 🌟 Features
-
-* **Strict Firewall:** Uses `DROP` policy by default. Automatically detects SSH port to prevent lockout.
-* **Auto-Install:** Automatically installs Docker, Docker Compose, Certbot, Fail2Ban, and NFTables.
-* **Safe Mode:** Does **NOT** reset Docker network settings (no flush ruleset).
-* **Log Rotation:** Enforces 100MB limit for Systemd Journal & Docker logs.
-* **Security:** Uses TLS 1.3 on port `5061`.
-* **Automation:** Automatic SSL generation (Let's Encrypt).
+> Готовий установник захищеного VoIP-сервера: **Asterisk 22** (Docker) + **PJSIP** + шифрування **TLS/SRTP** + **Let's Encrypt** SSL + **Fail2Ban** та **NFTables**. Створений для приватності та простоти використання.
 
 ---
 
-## 🛠 Step 1: Server Preparation
+# 📞 Інструкція з розгортання Asterisk
 
-1. **Log in to the server** via SSH as root:
+**Версія:** `v4.7.9`(Виправлено TLS транспорт: монтування CA сертифікатів, коректні права)
+
+Ця інструкція описує процес встановлення безпечної версії сервера VoIP (**Asterisk 22** + **PJSIP** + **TLS/SRTP** + **Fail2Ban** + **NFTables**) на чистий сервер **Ubuntu 24.04**.
+
+### 🌟 Особливості версії
+
+* **Суворий Firewall:** Політика `DROP` за замовчуванням. Автоматичне визначення порту SSH для захисту від блокування.
+* **Авто-встановлення:** Автоматично встановлює Docker, Docker Compose, Certbot, Fail2Ban та NFTables.
+* **Safe Mode:** Не скидає налаштування мережі Docker (no flush ruleset).
+* **Ротація логів:** Ліміт 100MB для Systemd Journal та Docker логів.
+* **Безпека:** Використовує TLS 1.3 на порту `5061`.
+* **Автоматизація:** Автоматична генерація SSL через Let's Encrypt.
+
+---
+
+## 🛠 Крок 1. Підготовка сервера
+
+1. **Увійдіть на сервер** через SSH під root:
 ```bash
 ssh root@your-server-ip
 
 ```
 
 
-2. **Check Ports:** Ensure ports `80`, `443`, and `5061` are free.
-> *Note: If this is a clean system installation, these ports should be free by default.*
+2. **Перевірте порти:** Переконайтеся, що порти `80`, `443` та `5061` вільні.
+> *Примітка: Якщо це чисте встановлення системи, порти мають бути вільні за замовчуванням.*
 
 
 
 ---
 
-## 📝 Step 2: Create the Script
+## 📝 Крок 2. Створення скрипту
 
-1. Create an empty file for the script:
+1. Створіть порожній файл для скрипту:
 ```bash
 nano install.sh
 
 ```
 
 
-2. **Copy** the FULL code of the script (`install.sh`) to your clipboard.
-3. **Paste** the code into the terminal:
-* **Windows** (PuTTY/PowerShell): Right-click.
-* **Mac/Linux:** `Cmd+V` or `Ctrl+Shift+V`.
+2. **Скопіюйте** ПОВНИЙ код скрипту (`install.sh`) у буфер обміну.
+3. **Вставте** код у термінал:
+* **Windows** (PuTTY/PowerShell): Натисніть **ПРАВУ** кнопку миші.
+* **Mac/Linux:** `Cmd+V` або `Ctrl+Shift+V`.
 
 
-4. **Save and Close**:
-* Press `Ctrl+O`, then `Enter`.
-* Press `Ctrl+X`.
+4. **Збережіть та закрийте файл**:
+* Натисніть `Ctrl+O`, потім `Enter`.
+* Натисніть `Ctrl+X`.
 
 
 
 ---
 
-## 🚀 Step 3: Run Installation
+## 🚀 Крок 3. Запуск установки
 
-1. Make the script executable:
+1. Надайте права на виконання:
 ```bash
 chmod +x install.sh
 
 ```
 
 
-2. **Run the script** (replace the placeholders with your actual data):
+2. **Запустіть скрипт** (замініть дані на свої):
 ```bash
 ./install.sh --domain your-domain.com --email admin@your-domain.com
 
 ```
 
 
-**Options:**
-| Option | Description |
+**Параметри запуску:**
+| Параметр | Опис |
 | :--- | :--- |
-| `--domain` | Your domain name (required, must point to server IP). |
-| `--email` | Email for Let's Encrypt certificate registration. |
-| `--ext-ip` | *(Optional)* External IP if behind NAT. Usually auto-detected. |
+| `--domain` | Ваше доменне ім'я (обов'язково, має бути направлено на IP сервера). |
+| `--email` | Пошта для реєстрації сертифіката Let's Encrypt. |
+| `--ext-ip` | *(Опціонально)* Зовнішній IP, якщо сервер за NAT. Зазвичай визначається автоматично. |
 
 ---
 
-## ⚙️ Step 4: Automated Actions
+## ⚙️ Крок 4. Що відбудеться автоматично
 
-The script will automatically perform the following actions without your intervention:
+Скрипт виконає наступні дії без вашої участі:
 
-1. 🐳 Install **Docker**, **Docker Compose**, **Certbot**, **Fail2Ban**, and **NFTables**.
-2. 🔒 Obtain an **SSL certificate** via Certbot.
-3. 👤 Generate passwords for users **100-105**.
-4. 🛡️ Configure firewall (`table inet voip_firewall`) **without breaking Docker**.
-5. ▶️ Start **Asterisk** in a container.
+1. 🐳 Встановить **Docker**, **Docker Compose**, **Certbot**, **Fail2Ban** та **NFTables**.
+2. 🔒 Отримає **SSL сертифікат** через Certbot.
+3. 👤 Згенерує паролі для користувачів **100-105**.
+4. 🛡️ Налаштує firewall (таблиця `inet voip_firewall`), **не ламаючи Docker**.
+5. ▶️ Запустить **Asterisk** у контейнері.
 
 ---
 
-## ✅ Step 5: Post-Installation & Checks
+## ✅ Крок 5. Після встановлення та перевірки
 
-### 1. Get SIP Credentials
+### 1. Отримання паролів SIP
 
-Retrieve the generated passwords:
+Перегляньте згенеровані паролі:
 
 ```bash
 cat /root/voip-server/users.env
 
 ```
 
-### 2. Check Container Status
 
-Ensure the container is running healthy:
+### 2. Статус контейнера
+
+Переконайтеся, що контейнер запущений та працює нормально:
 
 ```bash
 docker ps
 
 ```
 
-> **Expected:** Status should be `"Up (healthy)"`.
+> **Очікується:** Статус `"Up (healthy)"`.
 
-### 3. Check Firewall Rules
+### 3. Перевірка Firewall
 
-Verify the rules were applied:
+Перевірте застосування правил:
 
 ```bash
 nft list table inet voip_firewall
 
 ```
 
-### 🚨 3.1. Critical Check (Docker Network Safety)
+### 🚨 3.1. Критична перевірка (Docker Network Safety)
 
-Run these commands to verify that the firewall has not blocked container networking:
+Виконайте ці команди, щоб переконатися, що firewall не заблокував мережу контейнерам:
 
 ```bash
 systemctl restart nftables
@@ -156,138 +157,138 @@ docker exec asterisk-voip curl -Is https://google.com | grep HTTP
 
 ```
 
-* **Expected Result:** `HTTP/2 200` (or `HTTP/1.1 200`).
-* **Why this works:**
-* *Host network:* Container uses host IP/stack.
-* *Used accept:* Outbound curl -> SYN -> matched as 'established' on return.
-* *No block outbound:* Default policy is accept (Safe Mode).
+* **Очікуваний результат:** `HTTP/2 200` (або `HTTP/1.1 200`).
+* **Чому це працює:**
+* *Host network:* Контейнер використовує стек/IP хоста.
+* *Used accept:* Вихідний curl -> SYN -> збіг 'established' при поверненні.
+* *No block outbound:* Політика за замовчуванням accept (Safe Mode).
 
 
 
-> **Success:** If the test passes, Safe Mode is fully protecting Docker network connectivity.
+> **Успіх:** Якщо тест проходить — Safe Mode повністю захищає мережеву зв'язність Docker.
 
-### 4. Client Connection (e.g., Linphone)
+### 4. Підключення телефону (наприклад, Linphone)
 
-Configure your softphone with these settings:
+Налаштуйте софтфон, використовуючи наступні дані:
 
-* **Username:** `100` (or 101-105)
-* **Password:** *(from users.env)*
+* **Username:** `100` (або 101-105)
+* **Password:** *(з файлу users.env)*
 * **Domain:** `your-domain.com:5061`
 * **Transport:** `TLS`
 * **Media Encryption:** `SRTP`
-* **AVPF:** Disabled (usually)
+* **AVPF:** Disabled (зазвичай)
 * **ICE:** Enabled
 
 ---
 
-## 📂 Server Directory Structure
+## 📂 Структура файлів сервера
 
-After installation, the server is organized as follows at `/root/voip-server/`:
+Після встановлення сервер буде організовано наступним чином у теці `/root/voip-server/`:
 
 ```text
 /root/voip-server/
 ├── config/
 │   └── asterisk/
-│       ├── pjsip.conf          # SIP settings (ports, transports)
-│       ├── extensions.conf     # Dialplan logic
-│       ├── modules.conf        # Loaded modules
-│       ├── logger.conf         # Log settings
-│       └── rtp.conf            # RTP ports
-├── certs/                      # SSL Certificates (Let's Encrypt)
-├── data/                       # Asterisk database & storage
-├── logs/                       # Log files (security, CDRs)
-├── qr_codes/                   # Client config QR codes
-├── users.env                   # SIP Users & Passwords
-└── docker-compose.yml          # Docker service definition
+│       ├── pjsip.conf          # Налаштування SIP (порти, транспорт)
+│       ├── extensions.conf     # Логіка діалплану (дзвінків)
+│       ├── modules.conf        # Завантаження модулів
+│       ├── logger.conf         # Налаштування логів
+│       └── rtp.conf            # Діапазон RTP портів
+├── certs/                      # SSL Сертифікати (Let's Encrypt)
+├── data/                       # Бази даних Asterisk та сховище
+├── logs/                       # Логи (безпека, дзвінки/CDR)
+├── qr_codes/                   # QR-коди для налаштування клієнтів
+├── users.env                   # SIP користувачі та паролі
+└── docker-compose.yml          # Конфігурація запуску Docker
 ```
 
 ---
 
-## 🏗 Architecture & Design Choices
+## 🏗 Архітектура та вибір образу
 
-The project leverages **`andrius/asterisk:22`** (based on Alpine Linux) instead of heavyweight FreePBX distributions. This is a deliberate choice prioritizing **security** and **performance**.
+У проєкті використовується **`andrius/asterisk:22`** (на базі Alpine Linux) замість великовагових збірок FreePBX. Це свідомий вибір на користь **безпеки** та **продуктивності**.
 
 ```mermaid
 graph TD
-    User[SIP Client / Softphone]
-    Net[Internet / WAN]
+    User[SIP Клієнт / Софтфон]
+    Net[Інтернет / WAN]
     FW[NFTables Firewall]
     F2B[Fail2Ban]
     
-    subgraph Host [Ubuntu 24.04 Server]
+    subgraph Host [Сервер Ubuntu 24.04]
         FW
         F2B
         
         subgraph Docker [Docker Container: Asterisk 22]
-            PJSIP[PJSIP Stack]
-            RTP[RTP Engine]
-            Logs[Asterisk Logs]
+            PJSIP[Стек PJSIP]
+            RTP[Модуль RTP]
+            Logs[Логи Asterisk]
         end
     end
     
-    User -->|"Encrypted Signaling (TLS:5061)"| Net
-    User -->|"Encrypted Audio (SRTP)"| Net
+    User -->|"Шифрована сигналізація (TLS:5061)"| Net
+    User -->|"Шифрований голос (SRTP)"| Net
     Net --> FW
     
-    FW -->|"Allow TLS/RTP"| PJSIP
-    FW -->|"Allow RTP Range"| RTP
-    FW -.->|"Host Mode"| Docker
+    FW -->|"Дозволити TLS/RTP"| PJSIP
+    FW -->|"Дозволити RTP Range"| RTP
+    FW -.->|"Режим Host Network"| Docker
     
-    F2B -.->|"Monitors"| Logs
-    F2B -.->|"Updates Ban List"| FW
+    F2B -.->|"Моніторить"| Logs
+    F2B -.->|"Оновлює бан-лист"| FW
 ```
 
-### Why not FreePBX?
-Official distributions like FreePBX are designed for GUI management, requiring Apache, MySQL, PHP, and NodeJS, often exceeding **1 GB** in size. This creates a massive attack surface and complicates automation.
+### Чому не FreePBX?
+Офіційні дистрибутиви (FreePBX) призначені для керування через GUI, тягнуть за собою Apache, MySQL, PHP та NodeJS, займаючи **>1 ГБ**. Це створює величезну поверхню для атак та ускладнює автоматизацію.
 
-### Key Advantages:
-* 🚀 **Lightweight:** Image size is only **~60 MB** (vs 1 GB+ for alternatives).
-* ⚡ **Alpine Linux & Musl:** Minimal RAM footprint and instant container startup.
-* 🛡️ **Hardened Security:** The container has **no Web UI**, database, or unnecessary services. Exploiting web vulnerabilities is impossible simply because there is no web server.
-* 📄 **Infrastructure as Code (IaC):** Configuration is generated directly into `.conf` files via script. This is robust and transparent compared to modifying database entries.
-* 🔧 **Pure PJSIP:** Utilizes a modern SIP stack, discarding the legacy `chan_sip`.
+### Переваги поточного рішення:
+* 🚀 **Легковагість:** Образ важить лише **~60 МБ** (проти 1 ГБ+ у аналогів).
+* ⚡ **Alpine Linux & Musl:** Мінімальне споживання RAM та миттєвий старт контейнера.
+* 🛡️ **Безпека (Hardened):** У контейнері **немає веб-інтерфейсу**, бази даних та зайвих сервісів. Зламати через веб-вразливість неможливо, оскільки вебу просто немає.
+* 📄 **Infrastructure as Code (IaC):** Конфігурація генерується скриптом безпосередньо в `.conf` файли. Це надійніше, ніж правити налаштування в базі даних FreePBX.
+* 🔧 **Чистий PJSIP:** Використовується сучасний стек SIP без легасі-коду `chan_sip`.
 
-> **Verdict:** This is a solution for engineers who need a reliable, fast, and predictable "set and forget" VoIP server.
+> **Підсумок:** Це рішення для інженерів, яким потрібен надійний, швидкий та передбачуваний VoIP-сервер, що працює за принципом "поставив і забув".
 
 ---
 
-## 🛠 Advanced Usage
+## 🛠 Розширене використання (Advanced Usage)
 
-Here are some common scenarios for re-running the installer to apply changes or fix issues.
+Приклади повторного запуску скрипту для внесення змін або вирішення проблем.
 
-### 1. Update Configurations (Standard)
-Use this after `git pull` or if you edited the script logic. This will regenerate Asterisk config files without changing passwords or certificates.
+### 1. Оновлення конфігурації (Стандартне)
+Використовуйте після `git pull` або редагування скрипту. Це перегенерує конфіги Asterisk, але ЗБЕРЕЖЕ ваші паролі та сертифікати.
 ```bash
 ./install.sh --domain your-domain.com --update
 ```
 
-### 2. Change External IP (NAT Fix)
-If the auto-detection failed or your server's public IP changed.
+### 2. Зміна зовнішнього IP (NAT Fix)
+Якщо автовизначення помилилося або у сервера змінився публічний IP.
 ```bash
 ./install.sh --domain your-domain.com --ext-ip 1.2.3.4 --update
 ```
 
-### 3. Force Password Reset
-To generate NEW passwords for all users, delete the existing environment file before running the script.
-**Warning:** You will need to reconfigure all phones!
+### 3. Повне скидання паролів
+Щоб згенерувати НОВІ пароли для всіх користувачів, видаліть файл зі змінними перед запуском.
+**Увага:** Доведеться переналаштувати всі телефони!
 ```bash
 rm /root/voip-server/users.env
 ./install.sh --domain your-domain.com --email admin@example.com --update
 ```
 
-### 4. Use Custom Certificates
-If you cannot use Let's Encrypt (e.g., port 80 is blocked), point to your existing certificate files.
+### 4. Власні сертифікати (Custom Certs)
+Якщо ви не можете використовувати Let's Encrypt (наприклад, 80 порт зайнятий), вкажіть шлях до своїх файлів.
 ```bash
 ./install.sh --domain your-domain.com --cert-path /path/to/your/certs/ --update
 ```
 
 ---
 
-## 🔧 Troubleshooting
+## 🔧 Вирішення проблем (Troubleshooting)
 
-* **No Audio:** Check UDP range `10000-19999` in your hosting panel firewall (e.g., Hetzner Firewall / AWS Security Group).
-* **SSL Error:** Ensure the domain A-record points correctly to the server.
-* **View Logs:**
+* **Немає звуку:** Перевірте діапазон UDP `10000-19999` у панелі вашого хостингу (наприклад, Hetzner Firewall / AWS Security Group).
+* **Помилка SSL:** Переконайтеся, що домен пінгується з самого сервера.
+* **Логи Asterisk:**
 ```bash
 docker logs -f asterisk-voip
 
@@ -295,62 +296,77 @@ docker logs -f asterisk-voip
 
 ---
 
-# 🐙 Deploying Asterisk from GitHub
+# 🐙 Розгортання Asterisk з GitHub
 
-**Repository:** `weby-homelab/voip-installer`
-**Goal:** Quick start on a clean Ubuntu 24.04 server
+**Репозиторий:** `weby-homelab/voip-installer`
+**Мета:** Швидкий старт на чистому сервері Ubuntu 24.04
 
-Great move! Switching to a GitHub installation (`git clone`) is much more professional and reliable than manually copying text. It eliminates encoding errors and ensures you are using the latest version of the code.
+Встановлення через GitHub (`git clone`) — це набагато професійніше та надійніше, ніж копіювання тексту вручну. Це виключає помилки кодування та гарантує, що ви використовуєте останню версію коду.
 
-### 📋 Requirements
+Інструкція для розгортання прямо з репозиторію:
 
-* Clean server running **Ubuntu 24.04**.
-* **Root** access.
-* A **domain name** pointed to the server's IP address.
+### 📋 Вимоги
+
+* Чистий сервер **Ubuntu 24.04**.
+* Права **root**.
+* Домен, направлений на IP сервера.
 
 ---
 
-## 🚀 Option 1: Quick Installation (Recommended)
+## 🚀 Варіант 1: Швидке встановлення (рекомендовано)
 
-Use this method for a standard deployment. We will install git, download the repository, and run the script immediately.
+Використовуйте цей метод для стандартного розгортання. Ми встановимо git, завантажимо репозиторій та відразу запустимо скрипт.
 
-### Step 1. Preparation & Cloning
+### Крок 1. Підготовка та клонування
 
-Run these commands in the server console:
+Виконайте команди у консолі сервера:
 
 ```bash
-# 1. Update package lists and install git
+# 1. Оновлюємо списки пакетів та ставимо git
 apt update && apt install -y git
 
-# 2. Clone the repository
+# 2. Клонуємо репозиторій
 git clone https://github.com/weby-homelab/voip-installer.git
 
-# 3. Enter the directory
+# 3. Переходимо в папку
 cd voip-installer
 
 ```
 
-### Step 2. Run Installation
+
+### Крок 2. Запуск установки
 
 
 
-Make the script executable and run it with your parameters:
+
+
+Надаємо права на виконання та запускаємо скрипт з вашими параметрами:
+
+
 
 
 
 ```bash
 
-# 1. Make the script executable
+
+# 1. Робимо скрипт виконуваним
+
 
 chmod +x install.sh
 
 
 
-# 2. Run it (REPLACE email and domain WITH YOUR OWN!)
+
+
+# 2. Запускаємо (ЗАМІНІТЬ email та domain НА СВОЇ!)
+
 
 ./install.sh --email admin@your-domain.com --domain your-domain.com
 
+
 ```
+
+
 
 
 
@@ -358,76 +374,87 @@ chmod +x install.sh
 
 
 
-## ⚡ Option 2: "One-Liner" (For Pros)
+
+
+## ⚡ Варіант 2: "One-Liner" (для профі)
 
 
 
-If you want to execute everything in a single line (useful for mass deployment or cloud-init scripts):
+
+
+Якщо ви хочете виконати все одним рядком (зручно для масового розгортання або скриптів cloud-init):
+
+
 
 
 
 ```bash
 
+
 apt update && apt install -y git && \
+
 
 git clone https://github.com/weby-homelab/voip-installer.git && \
 
+
 cd voip-installer && \
+
 
 chmod +x install.sh && \
 
+
 ./install.sh --email admin@your-domain.com --domain your-domain.com
+
 
 ```
 
 ---
 
-## ✅ Post-Installation Checks
+## ✅ Що перевіряти після встановлення
 
-After the script finishes, configuration files may be located either inside the repository folder or in system paths (depending on the script logic).
+Після того, як скрипт відпрацює, файли конфігурації можуть знаходитися або всередині папки репозиторію, або в системних шляхах (залежно від логіки скрипту).
 
-1. **Check Status:**
+1. **Перевірка статусу:**
 ```bash
 docker ps
 
 ```
 
 
-*(Status should be `Up (healthy)`)*
-2. **Find SIP Passwords:**
-Usually, the script generates a `users.env` file. Check for it:
+*(Має бути статус `Up (healthy)`)*
+2. **Пошук паролів SIP:**
+Зазвичай скрипт генерує файл `users.env`. Перевірте його наявність:
 ```bash
-# Option A (in current folder)
+# Варіант А (у поточній папці)
 cat users.env
 
-# Option B (in /root/voip-server, if the script creates it)
+# Варіант Б (у папці /root/voip-server, якщо скрипт створює її)
 cat /root/voip-server/users.env
 
 ```
 
 
-3. **Network Safety Test (Safe Mode):**
+3. **Тест безпеки мережі (Safe Mode):**
 ```bash
 docker exec asterisk-voip curl -Is https://google.com | grep HTTP
 
 ```
 
 
-*(Expected result: `HTTP/2 200`)*
 
 ---
 
-## 💡 Tip: How to Update
+## 💡 Порада щодо оновлення
 
-If you update the code in the repository (e.g., fix bugs or add features), you only need to run this on the server:
+Якщо ви оновите код у репозиторії (наприклад, виправите баги або додасте фічі), на сервері достатньо виконати:
 
 ```bash
 cd ~/voip-installer
 git pull
-# Then rerun the script if a configuration update is required
+# Потім перезапустити скрипт, якщо потрібне оновлення конфігурації
 ```
 
-When it is necessary to update configurations WITHOUT changing passwords and without regenerating certificates anew (e.g. changing TZ):
+Коли необхідно оновлення конфігурацій БЕЗ зміни паролів та без повторної генерації сертифікатів (наприклад, змінити TZ):
 
 ```bash
 ./install.sh --domain example.com --cert-path /etc/letsencrypt/live/example.com/ --tz Europe/Berlin --update --yes
