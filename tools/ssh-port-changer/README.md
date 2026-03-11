@@ -19,90 +19,88 @@
 
 ---
 
-## 🚀 Why this script?
+**Ubuntu 24.04 LTS** та пізніших версіях зміна порту SSH більше не така проста, як редагування `/etc/ssh/sshd_config`. Canonical перейшов до **Systemd Socket Activation**, що означає, що `ssh.socket` контролює порт прослуховування, ігноруючи ваш конфігураційний файл.
 
-In **Ubuntu 24.04 LTS** and later, changing the SSH port is no longer as simple as editing `/etc/ssh/sshd_config`. Canonical moved to **Systemd Socket Activation**, meaning `ssh.socket` controls the listening port, ignoring your config file.
+Цей скрипт обробляє складність за вас, забезпечуючи безпечний перехід без **простоїв**.
 
-This script handles the complexity for you, ensuring a **zero-downtime**, safe transition.
+### ✨ Основні характеристики (v1.1)
 
-### ✨ Key Features (v1.1)
-
-*   **🕵️ Auto-Detection:** Automatically detects your *current* SSH port (whether it's 22 or something else).
-*   **🛡️ Fail-Safe Transition:** Configures the server to listen on **BOTH** the old and new ports simultaneously during setup.
-*   **🔌 Systemd Socket Override:** Correctly creates `listen.conf` drop-ins to handle socket binding.
-*   **🧱 Firewall Auto-Config:** Detects and updates **NFTables** or **UFW** automatically.
-*   **🧹 Cleanup:** After confirmation, it **removes the old port** from the firewall and SSH config, leaving only the new one active.
-*   **🚫 Anti-Lockout Verification:** Pauses and forces you to verify connectivity in a new window before closing the old port.
+* **🕵️ Автоматичне виявлення:** Автоматично визначає ваш *поточний* порт SSH (22 чи щось інше).
+* **🛡️ Безпечний перехід:** Налаштовує сервер для одночасного прослуховування **ОБИДВА** старих та нових портів під час налаштування.
+* **🔌 Systemd Socket Override:** Правильно створює випадаючі модулі `listen.conf` для обробки прив'язки сокетів.
+* **🧱 Автоматичне налаштування брандмауера:** Автоматично виявляє та оновлює **NFTables** або **UFW**.
+* **🧹 Очищення:** Після підтвердження **видаляє старий порт** з конфігурації брандмауера та SSH, залишаючи активним лише новий.
+* **🚫 Перевірка захисту від блокування:** Призупиняє роботу та змушує вас перевірити підключення в новому вікні перед закриттям старого порту.
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Швидкий старт
 
-Run this on your server as `root`:
+Запустіть це на вашому сервері від імені `root`:
 
 ```bash
-# Download and make executable
+# Завантажте та зробіть виконуваним файлом
 curl -fsSL https://raw.githubusercontent.com/weby-homelab/voip-installer/main/tools/ssh-port-changer/change_port.sh -o change_port.sh
 chmod +x change_port.sh
 
-# Run (Replace 54322 with your desired port)
+# Запустіть (замініть 54322 на потрібний порт)
 sudo ./change_port.sh 54322
 ```
 
 ---
 
-## 📖 Detailed Usage
+## 📖 Детальне використання
 
-### 1. Interactive Mode
-Run without arguments to be prompted for the port:
+### 1. Інтерактивний режим
+Запустіть без аргументів, щоб запитувати порт:
 ```bash
 ./change_port.sh
-# > Detected current SSH port: 22
-# > Enter new SSH port (1024-65535):
+# > Виявлено поточний порт SSH: 22
+# > Введіть новий порт SSH (1024-65535):
 ```
 
-### 2. Non-Interactive Mode
-Pass the port as an argument for automation:
+### 2. Неінтерактивний режим
+Передайте порт як аргумент для автоматизація:
 ```bash
 ./change_port.sh 2222
 ```
 
-### 3. Verification Step (Crucial)
-The script will pause at this stage:
+### 3. Крок перевірки (важливий)
+Скрипт призупиниться на цьому етапі:
 
-> **CRITICAL: DO NOT CLOSE THIS SESSION!**
-> Open a NEW terminal window and verify you can connect:
-> `ssh -p 54322 root@<your-server-ip>`
+> **КРИТИЧНО: НЕ ЗАКРИВАЙТЕ ЦЕЙ СЕСІЙ!**
+> Відкрийте НОВЕ вікно терміналу та перевірте, чи можете ви підключитися:
+> `ssh -p 54322 root@<ip-адреса-вашого-сервера>`
 
-**Only** after you successfully log in via the new port in a separate window, type `yes` in the script to finalize the changes.
-
----
-
-## 🔧 How it Works
-
-1.  **Validation:** Checks root privileges, OS version, and detects the currently active SSH port (e.g., 22).
-2.  **Firewall Open:** Adds an `ALLOW` rule for the **NEW** port immediately.
-3.  **Socket Dual-Bind:** Configures `ssh.socket` to listen on `0.0.0.0:OldPort` AND `0.0.0.0:NewPort`.
-4.  **Wait for User:** Pauses for manual verification.
-5.  **Finalization (After 'yes'):**
-    *   Removes `OldPort` from `ssh.socket` (SSH now listens ONLY on NewPort).
-    *   Updates `sshd_config` (removes old `Port` lines, adds new).
-    *   Updates `fail2ban` jails (replaces old port monitoring).
-    *   **Closes Firewall:** Removes the `ALLOW` rule for `OldPort` from UFW or NFTables.
+**Тільки** після успішного входу через новий порт в окремому вікні введіть `yes` у скрипті, щоб завершити зміни.
 
 ---
 
-## 📦 Compatibility
+## 🔧 Як це працює
 
-| OS | Version | Support | Note |
+1. **Перевірка:** Перевіряє права root, версію ОС та виявляє поточний активний порт SSH (наприклад, 22).
+2. **Відкриття брандмауера:** Негайно додає правило `ALLOW` для **НОВОГО** порту.
+3. **Socket Dual-Bind:** Налаштовує `ssh.socket` для прослуховування `0.0.0.0:OldPort` ТА `0.0.0.0:NewPort`.
+4. **Wait for User:** Призупиняє роботу для ручної перевірки.
+5. **Фіналізація (після «yes»):**
+* Видаляє `OldPort` з `ssh.socket` (SSH тепер прослуховує ТІЛЬКИ NewPort).
+* Оновлює `sshd_config` (видаляє старі рядки `Port`, додає нові).
+* Оновлює `fail2ban` (замінює старий моніторинг портів).
+* **Закриває брандмауер:** Видаляє правило `ALLOW` для `OldPort` з UFW або NFTables.
+
+---
+
+## 📦 Сумісність
+
+| ОС | Версія | Підтримка | Примітка |
 | :--- | :--- | :--- | :--- |
-| **Ubuntu** | 24.04 LTS (Noble) | ✅ Fully Supported | Uses `ssh.socket` logic |
-| **Ubuntu** | 22.04 LTS | ⚠️ Untested | Should work if socket activation is enabled |
-| **Debian** | 12 (Bookworm) | ❌ Not Supported | Uses standard `sshd_config` |
+| **Ubuntu** | 24.04 LTS (Noble) | ✅ Повністю підтримується | Використовує логіку `ssh.socket` |
+| **Ubuntu** | 22.04 LTS | ⚠️ Не тестувалося | Має працювати, якщо ввімкнено активацію сокета |
+| **Debian** | 12 (Bookworm) | ❌ Не підтримується | Використовує стандартний `sshd_config` |
 
 ---
 
-## 🤝 Contributing
+## 🤝 Внесок
 
-Found a bug? Use the [Issues](https://github.com/weby-homelab/voip-installer/issues) tab.
-Pull requests are welcome!
+Знайшли помилку? Скористайтеся вкладкою [Проблеми](https://github.com/weby-homelab/voip-installer/issues).
+Запити на доробку вітаються!
