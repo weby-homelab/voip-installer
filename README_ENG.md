@@ -432,3 +432,7 @@ When it is necessary to update configurations WITHOUT changing passwords and wit
 ```bash
 ./install.sh --domain example.com --cert-path /etc/letsencrypt/live/example.com/ --tz Europe/Berlin --update --yes
 ```
+<p align="center">
+  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
+  <strong>© 2026 Weby Homelab</strong>
+</p>
