@@ -104,3 +104,11 @@ sudo ./change_port.sh 54322
 
 Знайшли помилку? Скористайтеся вкладкою [Проблеми](https://github.com/weby-homelab/voip-installer/issues).
 Запити на доробку вітаються!
+
+---
+
+<br>
+<p align="center">
+  Built in Ukraine under air raid sirens &amp; blackouts ⚡<br>
+  &copy; 2026 Weby Homelab
+</p>

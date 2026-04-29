@@ -106,3 +106,11 @@ The script will pause at this stage:
 
 Found a bug? Use the [Issues](https://github.com/weby-homelab/voip-installer/issues) tab.
 Pull requests are welcome!
+
+---
+
+<br>
+<p align="center">
+  Built in Ukraine under air raid sirens &amp; blackouts ⚡<br>
+  &copy; 2026 Weby Homelab
+</p>
