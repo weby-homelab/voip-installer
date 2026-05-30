@@ -22,6 +22,61 @@
 
 ---
 
+## 🚀 Step-by-Step Installation Scenario on a Clean VPS
+
+When you run `install.sh` on a clean Ubuntu/Debian server, the script fully automates the deployment process step-by-step:
+
+```mermaid
+graph TD
+    %% Styling Classes
+    classDef init fill:#1e1e2e,stroke:#313244,stroke-width:1px,color:#cdd6f4;
+    classDef prep fill:#1e1e2e,stroke:#f5c2e7,stroke-width:2px,color:#f5c2e7;
+    classDef config fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#89b4fa;
+    classDef security fill:#1e1e2e,stroke:#f38ba8,stroke-width:2px,color:#f38ba8;
+    classDef deploy fill:#1e1e2e,stroke:#a6e3a1,stroke-width:2px,color:#a6e3a1;
+
+    %% Nodes
+    A[Start: root@VPS] --> B[1. System Prep & Dependencies]:::prep
+    B --> B1[Update apt & install utilities: curl, fail2ban, nftables, certbot]:::prep
+    B --> B2[Install official Docker CE]:::prep
+    B --> B3[Set log limits for journald & docker daemon]:::prep
+
+    B3 --> C[2. Directories & Certificates Setup]:::config
+    C --> C1[Create project folders: /root/voip-server]:::config
+    C --> C2[Generate users.env with random PJSIP passwords]:::config
+    C --> C3[Obtain Let's Encrypt SSL certificate]:::config
+    C --> C4[Register deploy-hook for auto SSL renewal]:::config
+
+    C4 --> D[3. Asterisk Configuration]:::config
+    D --> D1[Copy configs from Andrius Asterisk image]:::config
+    D --> D2[Generate rtp.conf, logger.conf, modules.conf, extensions.conf]:::config
+    D --> D3[Generate pjsip.conf & pjsip_wizard.conf with accounts]:::config
+    D --> D4[Generate docker-compose.yml & fix file permissions]:::config
+
+    D5 --> E[4. Firewall & Security Hardening]:::security
+    D --> D5[Detect SSH port to prevent lockouts]:::security
+    E --> E1[Generate strict /etc/nftables.conf: policy drop]:::security
+    E --> E2[Generate /etc/fail2ban/jail.local monitoring Asterisk & SSH]:::security
+    E --> E3[Harden SSH: PasswordAuthentication no]:::security
+
+    E3 --> F[5. Launch & Client Access]:::deploy
+    F --> F1[Start Asterisk container via docker compose]:::deploy
+    F --> F2[Generate QR codes for softphone configuration]:::deploy
+    F --> G([Finished: VoIP Deployed!]):::deploy
+
+    %% Class assignment
+    class A,B1,B2,B3 init;
+    class C1,C2,C3,C4,D1,D2,D3,D4,D5 config;
+    class E1,E2,E3 security;
+    class F1,F2,G deploy;
+```
+
+> [!WARNING]
+> ### 🚨 CRITICAL WARNING (LOCKOUT RISK)
+> Since the script disables SSH password authentication at the end of the installation (`PasswordAuthentication no`), you **MUST** add your public SSH key to `/root/.ssh/authorized_keys` before running the script. If you fail to do so, you will **lose access to the server** once the installation is complete and the current session is closed.
+
+---
+
 # 📞 Asterisk Deployment Guide
 
 **Version:** `v4.7.9`(Fix TLS transport: mount CA certs, correct permissions)
