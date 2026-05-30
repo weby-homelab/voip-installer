@@ -74,6 +74,9 @@ graph TD
 > [!WARNING]
 > ### 🚨 CRITICAL WARNING (LOCKOUT RISK)
 > Since the script disables SSH password authentication at the end of the installation (`PasswordAuthentication no`), you **MUST** add your public SSH key to `/root/.ssh/authorized_keys` before running the script. If you fail to do so, you will **lose access to the server** once the installation is complete and the current session is closed.
+>
+> 💡 If you need to securely change the default SSH port before or after the installation, you can use our utility:
+> * **[SSH Port Changer Guide (English)](https://github.com/weby-homelab/voip-installer/blob/main/tools/ssh-port-changer/README_ENG.md)**
 
 ---
 
