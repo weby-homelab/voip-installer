@@ -22,6 +22,61 @@
 
 ---
 
+## 🚀 Покроковий сценарій розгортання на чистому VPS
+
+Коли ви запускаєте `install.sh` на чистому сервері Ubuntu/Debian, скрипт повністю автоматизує процес розгортання крок за кроком:
+
+```mermaid
+graph TD
+    %% Styling Classes
+    classDef init fill:#1e1e2e,stroke:#313244,stroke-width:1px,color:#cdd6f4;
+    classDef prep fill:#1e1e2e,stroke:#f5c2e7,stroke-width:2px,color:#f5c2e7;
+    classDef config fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#89b4fa;
+    classDef security fill:#1e1e2e,stroke:#f38ba8,stroke-width:2px,color:#f38ba8;
+    classDef deploy fill:#1e1e2e,stroke:#a6e3a1,stroke-width:2px,color:#a6e3a1;
+
+    %% Nodes
+    A[Старт: root@VPS] --> B[1. Підготовка системи та залежностей]:::prep
+    B --> B1[Оновлення apt та встановлення утиліт: curl, fail2ban, nftables, certbot]:::prep
+    B --> B2[Встановлення офіційного Docker CE]:::prep
+    B --> B3[Встановлення лімітів логів journald та docker daemon]:::prep
+
+    B3 --> C[2. Налаштування директорій та сертифікатів]:::config
+    C --> C1[Створення робочих папок: /root/voip-server]:::config
+    C --> C2[Генерація users.env з випадковими паролями]:::config
+    C --> C3[Отримання Let's Encrypt SSL сертифіката]:::config
+    C --> C4[Створення deploy-hook для автооновлення SSL сертифікатів]:::config
+
+    C4 --> D[3. Конфігурація Asterisk]:::config
+    D --> D1[Копіювання конфігів з Docker-образу]:::config
+    D --> D2[Генерація rtp.conf, logger.conf, modules.conf, extensions.conf]:::config
+    D --> D3[Генерація pjsip.conf та pjsip_wizard.conf з обліковими записами]:::config
+    D --> D4[Генерація docker-compose.yml та виправлення прав доступу]:::config
+
+    D5 --> E[4. Фаєрвол та Захист]:::security
+    D --> D5[Визначення порту SSH для уникнення блокування]:::security
+    E --> E1[Генерація строгого /etc/nftables.conf: policy drop]:::security
+    E --> E2[Генерація /etc/fail2ban/jail.local з моніторингом Asterisk та SSH]:::security
+    E --> E3[Посилення безпеки SSH: PasswordAuthentication no]:::security
+
+    E3 --> F[5. Запуск та клієнтський доступ]:::deploy
+    F --> F1[Запуск контейнера Asterisk через docker compose]:::deploy
+    F --> F2[Генерація QR-кодів підключення для софтфонів]:::deploy
+    F --> G([Завершено: VoIP розгорнуто!]):::deploy
+
+    %% Class assignment
+    class A,B1,B2,B3 init;
+    class C1,C2,C3,C4,D1,D2,D3,D4,D5 config;
+    class E1,E2,E3 security;
+    class F1,F2,G deploy;
+```
+
+> [!WARNING]
+> ### 🚨 КРИТИЧНЕ ПОПЕРЕДЖЕННЯ (ЗАГРОЗА БЛОКУВАННЯ)
+> Оскільки наприкінці встановлення скрипт вимикає парольну автентифікацію SSH (`PasswordAuthentication no`), ви **ОБОВ'ЯЗКОВО** повинні додати свій публічний SSH-ключ у `/root/.ssh/authorized_keys` перед запуском скрипта. Якщо ви цього не зробите, після завершення інсталяції та виходу з поточної сесії ви **втратите доступ до сервера**.
+
+---
+
 # 📞 Інструкція з розгортання Asterisk
 
 **Версія:** `v4.7.9`(Виправлено TLS транспорт: монтування CA сертифікатів, коректні права)
